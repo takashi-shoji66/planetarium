@@ -39,10 +39,10 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 /* BOTTOM BAR */
 #bottom {
   position:fixed; bottom:0; left:0; right:0;
-  padding:8px 14px 16px;
-  background: linear-gradient(to top, rgba(0,0,8,0.9) 0%, transparent 100%);
-  z-index:10;
-  display:flex; flex-direction:column; gap:6px;
+  padding:6px 12px 10px;
+  background: linear-gradient(to top, rgba(0,0,8,0.95) 0%, transparent 100%);
+  z-index:15;
+  display:flex; flex-direction:column; gap:5px;
 }
 #status-row {
   display:flex; align-items:center; gap:8px;
@@ -125,43 +125,54 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 }
 .tog.on { color:#e2e8f0; border-color:rgba(125,211,252,0.4); background:rgba(125,211,252,0.1); }
 
-/* SENSOR DEBUG PANEL */
+/* SENSOR DEBUG PANEL - 下部に折りたたみ表示 */
 #sensor-panel {
-  position:fixed; top:52px; left:10px;
+  position:fixed; bottom:60px; left:0; right:0;
   z-index:20;
-  background:rgba(4,7,15,0.88);
-  border:1px solid rgba(125,211,252,0.35);
-  border-radius:10px;
-  padding:10px 13px;
-  backdrop-filter:blur(10px);
-  min-width:190px;
+  background:rgba(4,7,15,0.92);
+  border-top:1px solid rgba(125,211,252,0.3);
+  padding:0;
+  backdrop-filter:blur(12px);
   font-family:'Orbitron',monospace;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+#sensor-panel.open {
+  transform: translateY(0);
 }
 #sensor-panel .sp-title {
-  font-size:0.55rem; letter-spacing:0.25em;
-  color:#4a5a7a; margin-bottom:8px;
+  font-size:0.58rem; letter-spacing:0.2em;
+  color:#4a5a7a;
   display:flex; align-items:center; justify-content:space-between;
+  padding:8px 14px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  cursor:pointer;
 }
 #sensor-panel .sp-title span { color:#4ade80; font-size:0.5rem; }
-.sp-row {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:3px 0;
-  border-bottom:1px solid rgba(255,255,255,0.04);
-  gap:10px;
+/* 数値グリッド */
+.sp-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:1px; background:rgba(255,255,255,0.04);
+  padding:0;
 }
-.sp-row:last-child { border-bottom:none; }
-.sp-key { font-size:0.55rem; color:#4a5a7a; letter-spacing:0.1em; white-space:nowrap; }
-.sp-val { font-size:0.8rem; font-weight:700; color:#7dd3fc; text-align:right; min-width:70px; }
-.sp-val.az  { color:#fcd34d; text-shadow:0 0 8px rgba(252,211,77,0.5); }
-.sp-val.alt { color:#4ade80; text-shadow:0 0 8px rgba(74,222,128,0.5); }
-.sp-val.beta{ color:#a78bfa; }
+.sp-cell {
+  background:rgba(4,7,15,0.95);
+  padding:8px 12px;
+  display:flex; flex-direction:column; gap:2px;
+}
+.sp-key { font-size:0.5rem; color:#4a5a7a; letter-spacing:0.1em; }
+.sp-val { font-size:0.9rem; font-weight:700; color:#7dd3fc; }
+.sp-val.az   { color:#fcd34d; text-shadow:0 0 8px rgba(252,211,77,0.4); }
+.sp-val.alt  { color:#4ade80; text-shadow:0 0 8px rgba(74,222,128,0.4); }
+.sp-val.beta { color:#a78bfa; }
 .sp-val.alpha{ color:#fb923c; }
-.sp-val.ok  { color:#4ade80; }
-.sp-val.ng  { color:#f87171; }
+.sp-val.ok   { color:#4ade80; }
+.sp-val.ng   { color:#f87171; }
 .sp-bar {
-  height:4px; border-radius:2px;
-  background:rgba(255,255,255,0.08);
-  margin-top:2px; overflow:hidden;
+  height:3px; background:rgba(255,255,255,0.08);
+  margin:6px 14px; border-radius:2px; overflow:hidden;
 }
 .sp-bar-fill {
   height:100%; border-radius:2px;
@@ -179,43 +190,24 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
   <div id="hud-dir">---°</div>
 </div>
 
-<!-- SENSOR DEBUG PANEL -->
+<!-- SENSOR DEBUG PANEL - 下部スライドアップ -->
 <div id="sensor-panel">
-  <div class="sp-title">📡 センサーデータ <span id="sp-live">● LIVE</span></div>
-  <div class="sp-row">
-    <div class="sp-key">方位角 AZ</div>
-    <div class="sp-val az" id="sp-az">---°</div>
+  <div class="sp-title" onclick="toggleSensorPanel()">
+    📡 センサーデータ
+    <span id="sp-live">● LIVE</span>
   </div>
-  <div class="sp-row">
-    <div class="sp-key">高度角 ALT</div>
-    <div class="sp-val alt" id="sp-alt">---°</div>
-  </div>
-  <div class="sp-row">
-    <div class="sp-key">alpha（Z軸）</div>
-    <div class="sp-val alpha" id="sp-alpha">---°</div>
-  </div>
-  <div class="sp-row">
-    <div class="sp-key">beta（X軸）</div>
-    <div class="sp-val beta" id="sp-beta">---°</div>
-  </div>
-  <div class="sp-row">
-    <div class="sp-key">gamma（Y軸）</div>
-    <div class="sp-val beta" id="sp-gamma">---°</div>
-  </div>
-  <div class="sp-row">
-    <div class="sp-key">webkitCompass</div>
-    <div class="sp-val" id="sp-webkit">---°</div>
-  </div>
-  <div class="sp-row">
-    <div class="sp-key">イベント種別</div>
-    <div class="sp-val" id="sp-type" style="font-size:0.55rem">---</div>
-  </div>
-  <div class="sp-row">
-    <div class="sp-key">センサー状態</div>
-    <div class="sp-val" id="sp-status">待機中</div>
+  <div class="sp-grid">
+    <div class="sp-cell"><div class="sp-key">方位角 AZ</div><div class="sp-val az" id="sp-az">---°</div></div>
+    <div class="sp-cell"><div class="sp-key">高度角 ALT</div><div class="sp-val alt" id="sp-alt">---°</div></div>
+    <div class="sp-cell"><div class="sp-key">alpha Z軸</div><div class="sp-val alpha" id="sp-alpha">---°</div></div>
+    <div class="sp-cell"><div class="sp-key">beta X軸</div><div class="sp-val beta" id="sp-beta">---°</div></div>
+    <div class="sp-cell"><div class="sp-key">gamma Y軸</div><div class="sp-val beta" id="sp-gamma">---°</div></div>
+    <div class="sp-cell"><div class="sp-key">webkitCompass</div><div class="sp-val" id="sp-webkit">---°</div></div>
+    <div class="sp-cell"><div class="sp-key">イベント</div><div class="sp-val" id="sp-type" style="font-size:0.55rem;line-height:1.3">---</div></div>
+    <div class="sp-cell"><div class="sp-key">センサー状態</div><div class="sp-val" id="sp-status">待機中</div></div>
   </div>
   <div class="sp-bar"><div class="sp-bar-fill" id="sp-bar" style="width:0%"></div></div>
-  <div id="sp-log" style="margin-top:8px;font-size:0.5rem;color:#4a5a7a;line-height:1.6;font-family:'Orbitron',monospace;white-space:pre-wrap;word-break:break-all;"></div>
+  <div id="sp-log" style="padding:8px 14px;font-size:0.48rem;color:#4a5a7a;line-height:1.7;font-family:'Orbitron',monospace;white-space:pre-wrap;word-break:break-all;"></div>
 </div>
 
 <div id="controls">
@@ -231,6 +223,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
     <div class="tog on" data-key="labels">🏷 名前</div>
     <div class="tog on" data-key="planets">♄ 惑星</div>
     <div class="tog on" data-key="milkyway">🌌 銀河</div>
+    <div class="tog" id="sensor-tog" onclick="toggleSensorPanel()">📡 センサー</div>
   </div>
   <div id="status-row">
     <div id="status-dot"></div>
@@ -920,6 +913,16 @@ async function requestAll(){
 function setStatus(cls, msg){
   document.getElementById('status-dot').className='status-dot '+cls;
   document.getElementById('status-text').textContent=msg;
+}
+
+// センサーパネル開閉
+let sensorPanelOpen = false;
+function toggleSensorPanel(){
+  sensorPanelOpen = !sensorPanelOpen;
+  const panel = document.getElementById('sensor-panel');
+  const tog   = document.getElementById('sensor-tog');
+  panel.classList.toggle('open', sensorPanelOpen);
+  if(tog) tog.classList.toggle('on', sensorPanelOpen);
 }
 
 // オーバーレイを閉じてセンサー許可を開始
