@@ -100,9 +100,11 @@
 #tl-panel.open { transform:translateY(0); }
 
 #tl-title {
-  font-size:0.58rem; letter-spacing:0.2em;
-  color:#7dd3fc; margin-bottom:10px;
+  font-size:0.58rem; letter-spacing:0.15em;
+  color:#fcd34d; margin-bottom:10px;
   display:flex; align-items:center; justify-content:space-between;
+  padding-bottom:8px;
+  border-bottom:1px solid rgba(252,211,77,0.2);
 }
 #tl-time-display {
   font-size:1.1rem; font-weight:900;
@@ -396,7 +398,16 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 <div id="tl-panel">
   <div id="tl-title">
     ⏩ タイムラプス — 日の出・日没シミュレーション
-    <span id="tl-close" onclick="toggleTimelapse()" style="cursor:pointer;color:#4a5a7a;">✕</span>
+    <button onclick="toggleTimelapse()" style="
+      font-family:'Orbitron',monospace;
+      font-size:0.6rem; letter-spacing:0.1em;
+      padding:5px 12px; border-radius:6px;
+      cursor:pointer;
+      background:rgba(248,113,113,0.15);
+      border:1.5px solid rgba(248,113,113,0.5);
+      color:#f87171;
+      box-shadow:0 0 8px rgba(248,113,113,0.2);
+    ">✕ 閉じる</button>
   </div>
   <div id="tl-time-display">--:--</div>
   <div id="tl-sun-info">太陽高度: ---°　方位: ---°　空の状態: ---</div>
@@ -446,7 +457,18 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
     <div class="tog on" data-key="planets">♄ 惑星</div>
     <div class="tog on" data-key="milkyway">🌌 銀河</div>
     <div class="tog" id="sensor-tog" onclick="toggleSensorPanel()">📡 センサー</div>
-    <div class="tog" id="tl-tog" onclick="toggleTimelapse()">⏩ タイムラプス</div>
+    <div id="tl-tog" onclick="toggleTimelapse()" style="
+      font-family:'Orbitron',monospace;
+      font-size:0.62rem; letter-spacing:0.08em;
+      padding:6px 12px; border-radius:14px;
+      cursor:pointer; user-select:none;
+      white-space:nowrap; flex-shrink:0;
+      background:linear-gradient(135deg,rgba(252,211,77,0.25),rgba(251,146,60,0.2));
+      border:1.5px solid rgba(252,211,77,0.6);
+      color:#fcd34d;
+      box-shadow:0 0 10px rgba(252,211,77,0.25);
+      transition:all 0.2s;
+    ">⏩ タイムラプス</div>
   </div>
   <div id="status-row">
     <div id="status-dot"></div>
@@ -1841,7 +1863,17 @@ function toggleTimelapse(){
   const panel = document.getElementById('tl-panel');
   const tog   = document.getElementById('tl-tog');
   if(panel) panel.classList.toggle('open', tlOpen);
-  if(tog)   tog.classList.toggle('on', tlOpen);
+  if(tog){
+    if(tlOpen){
+      tog.style.background='linear-gradient(135deg,rgba(252,211,77,0.5),rgba(251,146,60,0.4))';
+      tog.style.boxShadow='0 0 16px rgba(252,211,77,0.5)';
+      tog.style.color='#fff';
+    } else {
+      tog.style.background='linear-gradient(135deg,rgba(252,211,77,0.25),rgba(251,146,60,0.2))';
+      tog.style.boxShadow='0 0 10px rgba(252,211,77,0.25)';
+      tog.style.color='#fcd34d';
+    }
+  }
 
   if(tlOpen && !tlBaseDate){
     // 初回: 今日の日付を基準に計算
