@@ -78,6 +78,98 @@
 /* 月の位置・形 */
 .moon-symbol { font-size:1.4rem; line-height:1; }
 
+/* ── タイムラプスパネル ── */
+#tl-panel {
+  position:fixed; bottom:62px; left:0; right:0;
+  z-index:25;
+  background:rgba(4,7,15,0.95);
+  border-top:1px solid rgba(125,211,252,0.3);
+  padding:12px 16px 10px;
+  backdrop-filter:blur(12px);
+  transform:translateY(100%);
+  transition:transform 0.3s ease;
+  font-family:'Orbitron',monospace;
+}
+#tl-panel.open { transform:translateY(0); }
+
+#tl-title {
+  font-size:0.58rem; letter-spacing:0.2em;
+  color:#7dd3fc; margin-bottom:10px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+#tl-time-display {
+  font-size:1.1rem; font-weight:900;
+  color:#fcd34d; text-shadow:0 0 12px rgba(252,211,77,0.6);
+  letter-spacing:0.1em; text-align:center;
+  margin-bottom:8px;
+}
+#tl-sun-info {
+  font-size:0.55rem; color:#94a3b8;
+  text-align:center; margin-bottom:10px;
+  letter-spacing:0.05em; line-height:1.8;
+}
+/* スライダー */
+#tl-slider {
+  width:100%; height:4px;
+  -webkit-appearance:none;
+  background:rgba(255,255,255,0.1);
+  border-radius:2px; outline:none;
+  margin-bottom:10px; cursor:pointer;
+}
+#tl-slider::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:18px; height:18px; border-radius:50%;
+  background:#7dd3fc;
+  box-shadow:0 0 8px rgba(125,211,252,0.6);
+  cursor:pointer;
+}
+/* ボタン行 */
+#tl-btns {
+  display:flex; gap:8px; align-items:center; justify-content:center;
+}
+.tl-btn {
+  font-family:'Orbitron',monospace;
+  font-size:0.6rem; letter-spacing:0.08em;
+  padding:7px 14px; border-radius:6px;
+  border:1px solid rgba(125,211,252,0.35);
+  background:rgba(125,211,252,0.08);
+  color:#7dd3fc; cursor:pointer;
+  transition:all 0.15s; white-space:nowrap;
+}
+.tl-btn:active { background:rgba(125,211,252,0.2); }
+.tl-btn.playing {
+  background:#fcd34d; color:#04070f;
+  border-color:#fcd34d;
+  box-shadow:0 0 10px rgba(252,211,77,0.4);
+}
+.tl-btn.accent {
+  background:rgba(74,222,128,0.1);
+  border-color:rgba(74,222,128,0.4);
+  color:#4ade80;
+}
+#tl-speed-label {
+  font-size:0.55rem; color:#4a5a7a;
+  min-width:50px; text-align:center;
+}
+/* 日の出・日没マーカー */
+#tl-markers {
+  position:relative; height:6px;
+  background:rgba(255,255,255,0.06);
+  border-radius:3px; margin-bottom:8px;
+  overflow:visible;
+}
+.tl-marker {
+  position:absolute; top:-3px;
+  width:3px; height:12px; border-radius:1px;
+  transform:translateX(-50%);
+}
+.tl-marker-label {
+  position:absolute; top:14px;
+  font-size:0.42rem; color:#94a3b8;
+  transform:translateX(-50%);
+  white-space:nowrap;
+}
+
 /* 月インジケーター（画面端の矢印） */
 #moon-indicator {
   position:fixed; z-index:20;
@@ -288,6 +380,26 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
   <button id="ar-btn" onclick="toggleAR()" style="pointer-events:auto;">📷 AR</button>
 </div>
 
+<!-- タイムラプスパネル -->
+<div id="tl-panel">
+  <div id="tl-title">
+    ⏩ タイムラプス — 日の出・日没シミュレーション
+    <span id="tl-close" onclick="toggleTimelapse()" style="cursor:pointer;color:#4a5a7a;">✕</span>
+  </div>
+  <div id="tl-time-display">--:--</div>
+  <div id="tl-sun-info">太陽高度: ---°　方位: ---°　空の状態: ---</div>
+  <div id="tl-markers"></div>
+  <input type="range" id="tl-slider" min="0" max="1439" value="0">
+  <div id="tl-btns">
+    <button class="tl-btn" onclick="tlSkipTo('sunrise')">🌅 日の出</button>
+    <button class="tl-btn" id="tl-play-btn" onclick="tlTogglePlay()">▶ 再生</button>
+    <button class="tl-btn" onclick="tlSkipTo('sunset')">🌇 日没</button>
+    <button class="tl-btn accent" onclick="tlSkipTo('now')">⏱ 現在</button>
+    <span id="tl-speed-label">×60</span>
+    <button class="tl-btn" onclick="tlChangeSpeed()">⚡ 速度</button>
+  </div>
+</div>
+
 <!-- SENSOR DEBUG PANEL - 下部スライドアップ -->
 <div id="sensor-panel">
   <div class="sp-title" onclick="toggleSensorPanel()">
@@ -322,6 +434,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
     <div class="tog on" data-key="planets">♄ 惑星</div>
     <div class="tog on" data-key="milkyway">🌌 銀河</div>
     <div class="tog" id="sensor-tog" onclick="toggleSensorPanel()">📡 センサー</div>
+    <div class="tog" id="tl-tog" onclick="toggleTimelapse()">⏩ タイムラプス</div>
   </div>
   <div id="status-row">
     <div id="status-dot"></div>
@@ -345,15 +458,29 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 </div>
 
 <!-- バージョンバッジ＆更新履歴 -->
-<div id="version-badge" onclick="toggleChangelog()">v1.4.0</div>
+<div id="version-badge" onclick="toggleChangelog()">v1.6.0</div>
 <div id="changelog">
   <div class="cl-title">📋 更新履歴</div>
-  <div class="cl-ver">v1.4.0 — 現在</div>
+  <div class="cl-ver">v1.6.0 — 現在</div>
+  <div class="cl-item">タイムラプス機能追加</div>
+  <div class="cl-item">日の出・日没シミュレーション</div>
+  <div class="cl-item">空色リアルタイム変化（7段階）</div>
+  <div class="cl-ver">v1.5.0</div>
+  <div class="cl-item">太陽位置バグ修正（方位180°ずれ）</div>
+  <div class="cl-item">夜明け・昼・夕暮れの空色グラデーション追加</div>
+  <div class="cl-ver">v1.4.0</div>
   <div class="cl-item">土星に輪を追加</div>
   <div class="cl-item">木星に縞模様・大赤斑追加</div>
   <div class="cl-item">火星・金星・水星を個別描画</div>
   <div class="cl-item">惑星に天文記号（♄♃♂♀☿）追加</div>
-  <div class="cl-ver">v1.4.0 — 現在</div>
+  <div class="cl-ver">v1.6.0 — 現在</div>
+  <div class="cl-item">タイムラプス機能追加</div>
+  <div class="cl-item">日の出・日没シミュレーション</div>
+  <div class="cl-item">空色リアルタイム変化（7段階）</div>
+  <div class="cl-ver">v1.5.0</div>
+  <div class="cl-item">太陽位置バグ修正（方位180°ずれ）</div>
+  <div class="cl-item">夜明け・昼・夕暮れの空色グラデーション追加</div>
+  <div class="cl-ver">v1.4.0</div>
   <div class="cl-item">M78星雲・北極星追加</div>
   <div class="cl-item">月の位置・月相表示追加</div>
   <div class="cl-item">バージョン表示・更新履歴追加</div>
@@ -409,6 +536,67 @@ const mod360 = a => ((a%360)+360)%360;
 // ══════════════════════════════════════════════
 function getJD(date){ return date.getTime()/86400000 + 2440587.5; }
 
+// ══════════════════════════════════════════════
+//  空の色計算（太陽高度に応じて変化）
+// ══════════════════════════════════════════════
+function getSkyColor(sunAlt, ar){
+  // sunAlt: 太陽の高度角（度）
+  // -18°以下: 天文薄明なし（完全な夜）
+  // -18〜-12°: 天文薄明
+  // -12〜-6°: 航海薄明
+  // -6〜0°: 市民薄明（明け方・夕方の空）
+  // 0〜15°: 日の出・日没直後（オレンジ）
+  // 15°以上: 昼間（青空）
+
+  if(ar){
+    return { overlay: sunAlt > 0 ? 0.1 : 0.35 };
+  }
+  if(sunAlt < -18){
+    // 完全な夜
+    return { top:'#02040c', bottom:'#010208',
+             glow:'rgba(0,0,0,0)', glowMid:'rgba(0,0,0,0)', overlay:0.35 };
+  } else if(sunAlt < -12){
+    // 天文薄明（わずかに明るい）
+    const t = (sunAlt+18)/6;
+    return { top:`rgba(2,4,15,1)`, bottom:`rgba(${Math.round(5+t*10)},${Math.round(4+t*8)},${Math.round(20+t*15)},1)`,
+             glow:`rgba(30,15,5,${t*0.15})`, glowMid:`rgba(10,5,2,${t*0.08})`, overlay:0.3 };
+  } else if(sunAlt < -6){
+    // 航海薄明（紺色→深青）
+    const t = (sunAlt+12)/6;
+    return { top:`rgba(${Math.round(2+t*5)},${Math.round(5+t*15)},${Math.round(20+t*40)},1)`,
+             bottom:`rgba(${Math.round(10+t*30)},${Math.round(10+t*25)},${Math.round(40+t*50)},1)`,
+             glow:`rgba(${Math.round(60+t*80)},${Math.round(30+t*40)},${Math.round(10+t*10)},${0.1+t*0.2})`,
+             glowMid:`rgba(40,20,5,${t*0.15})`, overlay:0.25 };
+  } else if(sunAlt < 0){
+    // 市民薄明（深青→オレンジグロー）
+    const t = (sunAlt+6)/6;
+    return { top:`rgba(${Math.round(5+t*15)},${Math.round(10+t*30)},${Math.round(50+t*60)},1)`,
+             bottom:`rgba(${Math.round(20+t*60)},${Math.round(15+t*50)},${Math.round(40+t*20)},1)`,
+             glow:`rgba(255,${Math.round(120+t*60)},${Math.round(20+t*20)},${0.25+t*0.35})`,
+             glowMid:`rgba(200,80,10,${0.1+t*0.2})`, overlay:0.15 };
+  } else if(sunAlt < 5){
+    // 日の出直後（オレンジ〜ピンク）
+    const t = sunAlt/5;
+    return { top:`rgba(${Math.round(20+t*30)},${Math.round(40+t*60)},${Math.round(100+t*80)},1)`,
+             bottom:`rgba(${Math.round(80+t*100)},${Math.round(60+t*80)},${Math.round(30+t*40)},1)`,
+             glow:`rgba(255,${Math.round(160+t*40)},${Math.round(40+t*60)},${0.6-t*0.2})`,
+             glowMid:`rgba(220,100,20,${0.3-t*0.1})`, overlay:0.08 };
+  } else if(sunAlt < 15){
+    // 朝（オレンジ→青空へ移行）
+    const t = (sunAlt-5)/10;
+    return { top:`rgba(${Math.round(50+t*80)},${Math.round(100+t*100)},${Math.round(180+t*55)},1)`,
+             bottom:`rgba(${Math.round(180-t*60)},${Math.round(140-t*30)},${Math.round(70+t*80)},1)`,
+             glow:`rgba(255,${Math.round(200-t*100)},${Math.round(100-t*60)},${0.4-t*0.35})`,
+             glowMid:`rgba(200,150,50,${0.15-t*0.12})`, overlay:0.05 };
+  } else {
+    // 昼間（青空）
+    const t = Math.min(1,(sunAlt-15)/30);
+    return { top:`rgba(${Math.round(130-t*30)},${Math.round(200-t*10)},${Math.round(235+t*20)},1)`,
+             bottom:`rgba(${Math.round(160-t*20)},${Math.round(210-t*10)},${Math.round(240+t*15)},1)`,
+             glow:'rgba(255,255,200,0.1)', glowMid:'rgba(255,255,200,0.05)', overlay:0.02 };
+  }
+}
+
 function getLST(lon, date){
   const jd = getJD(date);
   const T  = (jd-2451545.0)/36525;
@@ -423,7 +611,7 @@ function raDecToAltAz(raDeg, decDeg, lat, lon, date){
   const alt = asin(sinAlt);
   const cosAz = (sin(decDeg)-sin(lat)*sinAlt)/(cos(lat)*cos(alt));
   let az = acos(cosAz);
-  if(sin(HA*DEG)>0) az = 360-az;
+  if(sin(HA)>0) az = 360-az;  // HAは度数なのでsin()に直接渡す
   return {alt, az};
 }
 
@@ -589,10 +777,13 @@ const STARS = [
   [183.79,-57.11,   0.77,'Acrux',  'アクルックス'],
   [186.65,-63.10,   1.25,'Mimosa', 'ミモザ'],
   [187.79,-57.11,   1.64,'Gacrux', 'ガクルックス'],
-  // Cygnus
-  [310.36, 45.28,   1.25,'Deneb',  'デネブ'],
-  [305.56, 40.26,   2.20,'Sadr',   'サドル'],
+  // Cygnus（白鳥座）
+  [310.36, 45.28,   1.25,'Deneb',     'デネブ'],
+  [305.56, 40.26,   2.20,'Sadr',      'サドル'],
   [311.55, 33.97,   2.48,'Gienah Cyg','ギエナ'],
+  [292.68, 27.96,   3.05,'Albireo',   'アルビレオ'],
+  [318.23, 38.05,   2.86,'Delta Cyg', 'デルタはくちょう'],
+  [314.31, 45.13,   3.94,'Epsilon Cyg','イプシロンはくちょう'],
   // Lyra
   [279.23, 38.78,   0.03,'Vega',   'ベガ'],
   [282.52, 32.69,   3.25,'Sulafat','スラファト'],
@@ -646,8 +837,10 @@ const CONST_LINES = [
   ['Regulus','Algieba'],['Algieba','Denebola'],
   // Gemini
   ['Castor','Pollux'],['Pollux','Alhena'],
-  // Cygnus (Northern Cross)
-  ['Deneb','Sadr'],['Sadr','Gienah Cyg'],
+  // Cygnus（白鳥座・北十字）
+  ['Deneb','Sadr'],['Sadr','Albireo'],          // 縦軸（頭〜尾）
+  ['Gienah Cyg','Sadr'],['Sadr','Delta Cyg'],   // 横軸（翼）
+  ['Deneb','Epsilon Cyg'],                       // 尾の延長
   // Lyra
   ['Vega','Sulafat'],
   // Aquila
@@ -755,21 +948,44 @@ STAR_LIST.forEach(s=>{ starByName[s[3]] = s; });
 function draw(){
   ctx.clearRect(0,0,W,H);
 
-  // Sky gradient (ARモード時は透明背景)
+  // 太陽高度から空の色を計算
+  const sunObj = cachedPlanets.find(p=>p.name==='Sun');
+  const sunAlt = sunObj ? sunObj.alt : -90;
+  const skyColor = getSkyColor(sunAlt, arActive);
+
   if(arActive){
     ctx.clearRect(0,0,W,H);
-    // ARモード: 星をより明るく描画するため軽い暗幕を重ねる
-    ctx.fillStyle = 'rgba(2,5,15,0.35)';
+    ctx.fillStyle = `rgba(2,5,15,${skyColor.overlay})`;
     ctx.fillRect(0,0,W,H);
   } else {
-    const grad = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.8);
-    grad.addColorStop(0,'#060d1f');
-    grad.addColorStop(1,'#020508');
+    // 地平線方向のグラデーション（夜明け・夕暮れ演出）
+    const fovV = fovH*(H/W);
+    // 空のベースグラデーション
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, skyColor.top);
+    grad.addColorStop(1, skyColor.bottom);
     ctx.fillStyle = grad;
     ctx.fillRect(0,0,W,H);
+
+    // 太陽の方向に地平線グロー
+    if(sunAlt > -18 && sunAlt < 15){
+      const dAz = ((sunObj.az - azCenter + 540)%360)-180;
+      const sunX = W/2 + (dAz/fovH)*W;
+      const horizonY = H/2 + (altCenter/fovV)*H;
+      const glowW = W * (1 - Math.abs(dAz)/fovH);
+      if(glowW > 0){
+        const hg = ctx.createRadialGradient(sunX, horizonY, 0, sunX, horizonY, Math.min(W,H)*0.6);
+        hg.addColorStop(0, skyColor.glow);
+        hg.addColorStop(0.4, skyColor.glowMid);
+        hg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle = hg;
+        ctx.fillRect(0,0,W,H);
+      }
+    }
   }
 
-  const now = new Date();
+  // タイムラプス中は仮想時刻を使用
+  const now = tlActive ? getTLDate() : new Date();
   const jd  = getJD(now);
 
   // Pre-compute alt/az for all stars
@@ -1475,6 +1691,185 @@ function updateMoonHUD(moon){
     lbl.textContent = `月 ${moon.az.toFixed(0)}°${dirStr(moon.az)} ${altStr}`;
     lbl.style.left = (ex - 20) + 'px';
     lbl.style.top  = (ey + 14) + 'px';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  タイムラプス機能
+// ══════════════════════════════════════════════
+let tlOpen       = false;
+let tlPlaying    = false;
+let tlMinutes    = 0;        // 0〜1439 (0:00〜23:59)
+let tlSpeed      = 60;       // 1分のシミュレーション = 1秒
+let tlSpeedIdx   = 1;
+const TL_SPEEDS  = [30, 60, 120, 300]; // 倍速
+let tlInterval   = null;
+let tlBaseDate   = null;     // シミュレーション基準日
+let tlSunrise    = -1;       // 日の出 (分)
+let tlSunset     = -1;       // 日没 (分)
+let tlActive     = false;    // タイムラプス中かどうか
+
+// タイムラプス用の仮想時刻を返す
+function getTLDate(){
+  if(!tlActive) return new Date();
+  const d = tlBaseDate ? new Date(tlBaseDate) : new Date();
+  d.setHours(0,0,0,0);
+  d.setMinutes(tlMinutes);
+  return d;
+}
+
+// 太陽高度を計算（分単位）
+function getSunAltForMin(minutes, baseDate){
+  const d = new Date(baseDate);
+  d.setHours(0,0,0,0);
+  d.setMinutes(minutes);
+  const jd = getJD(d);
+  const T  = (jd-2451545.0)/36525;
+  const L0 = mod360(280.46646+36000.76983*T);
+  const M  = mod360(357.52911+35999.05029*T);
+  const C  = (1.914602-0.004817*T)*sin(M)+0.019993*sin(2*M);
+  const sL = L0+C;
+  const ep = 23.439291-0.013004*T;
+  const sR = mod360(Math.atan2(cos(ep)*sin(sL),cos(sL))*RAD);
+  const sD = asin(sin(ep)*sin(sL));
+  const GM = mod360(280.46061837+360.98564736629*(jd-2451545.0)+0.000387933*T*T);
+  const LS = mod360(GM+lon);
+  const HA = mod360(LS-sR);
+  const sA = asin(Math.max(-1,Math.min(1,sin(lat)*sin(sD)+cos(lat)*cos(sD)*cos(HA))));
+  return sA;
+}
+
+// 日の出・日没を計算
+function calcSunriseSunset(baseDate){
+  let rise=-1, set=-1;
+  let prevAlt = getSunAltForMin(0, baseDate);
+  for(let m=1; m<1440; m++){
+    const alt = getSunAltForMin(m, baseDate);
+    if(prevAlt < 0 && alt >= 0 && rise < 0) rise = m;
+    if(prevAlt >= 0 && alt < 0 && set < 0)  set  = m;
+    prevAlt = alt;
+  }
+  return {rise, set};
+}
+
+// マーカーをスライダー上に描画
+function renderTLMarkers(){
+  const el = document.getElementById('tl-markers');
+  if(!el) return;
+  el.innerHTML='';
+  const addMark = (min, color, label)=>{
+    if(min<0) return;
+    const pct = (min/1439)*100;
+    const mk = document.createElement('div');
+    mk.className='tl-marker';
+    mk.style.cssText=`left:${pct}%;background:${color};`;
+    el.appendChild(mk);
+    const lb = document.createElement('div');
+    lb.className='tl-marker-label';
+    lb.style.left=`${pct}%`;
+    lb.textContent=label;
+    el.appendChild(lb);
+  };
+  addMark(tlSunrise,'#fcd34d',`🌅${Math.floor(tlSunrise/60)}:${String(tlSunrise%60).padStart(2,'0')}`);
+  addMark(tlSunset, '#fb923c',`🌇${Math.floor(tlSunset/60)}:${String(tlSunset%60).padStart(2,'0')}`);
+  // 正午
+  addMark(720,'#fff','12:00');
+}
+
+// タイムラプス開閉
+function toggleTimelapse(){
+  tlOpen = !tlOpen;
+  const panel = document.getElementById('tl-panel');
+  const tog   = document.getElementById('tl-tog');
+  if(panel) panel.classList.toggle('open', tlOpen);
+  if(tog)   tog.classList.toggle('on', tlOpen);
+
+  if(tlOpen && !tlBaseDate){
+    // 初回: 今日の日付を基準に計算
+    tlBaseDate = new Date();
+    tlBaseDate.setHours(0,0,0,0);
+    // 現在時刻から開始
+    const now = new Date();
+    tlMinutes = now.getHours()*60 + now.getMinutes();
+    document.getElementById('tl-slider').value = tlMinutes;
+    // 日の出・日没計算（少し待ってから）
+    setTimeout(()=>{
+      const rs = calcSunriseSunset(tlBaseDate);
+      tlSunrise = rs.rise; tlSunset = rs.set;
+      renderTLMarkers();
+      updateTLDisplay();
+    }, 100);
+  }
+}
+
+// 再生/停止
+function tlTogglePlay(){
+  tlPlaying = !tlPlaying;
+  const btn = document.getElementById('tl-play-btn');
+  if(tlPlaying){
+    btn.textContent='⏸ 停止'; btn.classList.add('playing');
+    tlActive = true;
+    tlInterval = setInterval(()=>{
+      tlMinutes = (tlMinutes + 1) % 1440;
+      document.getElementById('tl-slider').value = tlMinutes;
+      updateTLDisplay();
+    }, 1000/tlSpeed*60);
+  } else {
+    btn.textContent='▶ 再生'; btn.classList.remove('playing');
+    if(tlInterval){ clearInterval(tlInterval); tlInterval=null; }
+  }
+}
+
+// 速度変更
+function tlChangeSpeed(){
+  if(tlPlaying){ tlTogglePlay(); } // 一旦停止
+  tlSpeedIdx = (tlSpeedIdx+1) % TL_SPEEDS.length;
+  tlSpeed    = TL_SPEEDS[tlSpeedIdx];
+  document.getElementById('tl-speed-label').textContent = `×${tlSpeed}`;
+  if(tlPlaying) tlTogglePlay(); // 再開
+}
+
+// スキップ
+function tlSkipTo(target){
+  if(target==='sunrise' && tlSunrise>0) tlMinutes=Math.max(0,tlSunrise-30);
+  else if(target==='sunset' && tlSunset>0) tlMinutes=Math.max(0,tlSunset-30);
+  else if(target==='now'){
+    const now=new Date();
+    tlMinutes=now.getHours()*60+now.getMinutes();
+    tlActive=false; // 現在時刻に戻す
+  }
+  document.getElementById('tl-slider').value=tlMinutes;
+  updateTLDisplay();
+}
+
+// スライダー変更
+document.addEventListener('DOMContentLoaded',()=>{
+  const sl=document.getElementById('tl-slider');
+  if(sl) sl.addEventListener('input',e=>{
+    tlMinutes=parseInt(e.target.value);
+    tlActive=true;
+    updateTLDisplay();
+  });
+});
+
+// TL表示更新
+function updateTLDisplay(){
+  const h=Math.floor(tlMinutes/60), m=tlMinutes%60;
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('tl-time-display').textContent=`${pad(h)}:${pad(m)} PHT`;
+  // 太陽高度情報
+  if(tlBaseDate){
+    const alt=getSunAltForMin(tlMinutes,tlBaseDate);
+    let skyState='';
+    if(alt<-18) skyState='🌑 夜（薄明なし）';
+    else if(alt<-12) skyState='🌌 天文薄明';
+    else if(alt<-6)  skyState='🌃 航海薄明';
+    else if(alt<0)   skyState='🌆 市民薄明';
+    else if(alt<5)   skyState='🌅 日の出/日没';
+    else if(alt<15)  skyState='🌤 朝/夕方';
+    else             skyState='☀️ 昼間';
+    const el=document.getElementById('tl-sun-info');
+    if(el) el.textContent=`太陽高度: ${alt.toFixed(1)}°　${skyState}`;
   }
 }
 
