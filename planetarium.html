@@ -345,10 +345,15 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 </div>
 
 <!-- バージョンバッジ＆更新履歴 -->
-<div id="version-badge" onclick="toggleChangelog()">v1.3.0</div>
+<div id="version-badge" onclick="toggleChangelog()">v1.4.0</div>
 <div id="changelog">
   <div class="cl-title">📋 更新履歴</div>
-  <div class="cl-ver">v1.3.0 — 現在</div>
+  <div class="cl-ver">v1.4.0 — 現在</div>
+  <div class="cl-item">土星に輪を追加</div>
+  <div class="cl-item">木星に縞模様・大赤斑追加</div>
+  <div class="cl-item">火星・金星・水星を個別描画</div>
+  <div class="cl-item">惑星に天文記号（♄♃♂♀☿）追加</div>
+  <div class="cl-ver">v1.4.0 — 現在</div>
   <div class="cl-item">M78星雲・北極星追加</div>
   <div class="cl-item">月の位置・月相表示追加</div>
   <div class="cl-item">バージョン表示・更新履歴追加</div>
@@ -994,8 +999,160 @@ function draw(){
           ctx.fillStyle='#e8e8c8';
           ctx.fillText(`月 ${pl.phaseEmoji}${pl.phaseName}`, p.x+mr+5, p.y+4);
         }
+      } else if(pl.name === 'Saturn'){
+        // ── 土星（輪付き）──
+        ctx.save();
+        // グロー
+        const sg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*7);
+        sg.addColorStop(0,'rgba(252,211,77,0.5)');
+        sg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r*7,0,Math.PI*2);
+        ctx.fillStyle=sg; ctx.fill();
+        // 輪（後ろ半分）
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, r*2.8, r*0.7, 0, Math.PI, 0);
+        ctx.strokeStyle='rgba(230,190,80,0.7)'; ctx.lineWidth=3; ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, r*2.2, r*0.55, 0, Math.PI, 0);
+        ctx.strokeStyle='rgba(200,160,60,0.5)'; ctx.lineWidth=2; ctx.stroke();
+        // 本体
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fillStyle='#fcd34d'; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.strokeStyle='rgba(180,140,40,0.8)'; ctx.lineWidth=1; ctx.stroke();
+        // 縞模様
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y+r*0.2, r*0.95, r*0.25, 0, 0, Math.PI*2);
+        ctx.strokeStyle='rgba(180,140,40,0.4)'; ctx.lineWidth=1; ctx.stroke();
+        // 輪（前半分）
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, r*2.8, r*0.7, 0, 0, Math.PI);
+        ctx.strokeStyle='rgba(230,190,80,0.7)'; ctx.lineWidth=3; ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, r*2.2, r*0.55, 0, 0, Math.PI);
+        ctx.strokeStyle='rgba(200,160,60,0.5)'; ctx.lineWidth=2; ctx.stroke();
+        ctx.restore();
+        if(showLabels){
+          ctx.font="bold 13px sans-serif";
+          ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=3;
+          ctx.strokeText('♄ 土星', p.x+r*3+4, p.y+4);
+          ctx.fillStyle='#fcd34d';
+          ctx.fillText('♄ 土星', p.x+r*3+4, p.y+4);
+        }
+
+      } else if(pl.name === 'Jupiter'){
+        // ── 木星（縞模様＋大赤斑）──
+        ctx.save();
+        // グロー
+        const jg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*7);
+        jg.addColorStop(0,'rgba(251,146,60,0.45)');
+        jg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r*7,0,Math.PI*2);
+        ctx.fillStyle=jg; ctx.fill();
+        // 本体（グラデーション）
+        const jbg = ctx.createRadialGradient(p.x-r*0.3,p.y-r*0.3,0,p.x,p.y,r);
+        jbg.addColorStop(0,'#fff3e0');
+        jbg.addColorStop(0.5,'#ffcc80');
+        jbg.addColorStop(1,'#fb923c');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fillStyle=jbg; ctx.fill();
+        // 縞模様
+        [-0.45,-0.15,0.15,0.45].forEach((oy,i)=>{
+          ctx.save();
+          ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.clip();
+          ctx.beginPath();
+          ctx.ellipse(p.x, p.y+r*oy, r, r*0.12, 0, 0, Math.PI*2);
+          ctx.fillStyle = i%2===0 ? 'rgba(180,80,20,0.35)' : 'rgba(255,200,100,0.2)';
+          ctx.fill();
+          ctx.restore();
+        });
+        // 大赤斑
+        ctx.save();
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.clip();
+        ctx.beginPath();
+        ctx.ellipse(p.x+r*0.3, p.y+r*0.2, r*0.3, r*0.18, 0, 0, Math.PI*2);
+        ctx.fillStyle='rgba(200,60,20,0.5)'; ctx.fill();
+        ctx.restore();
+        ctx.restore();
+        if(showLabels){
+          ctx.font="bold 13px sans-serif";
+          ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=3;
+          ctx.strokeText('♃ 木星', p.x+r+5, p.y+4);
+          ctx.fillStyle='#fb923c';
+          ctx.fillText('♃ 木星', p.x+r+5, p.y+4);
+        }
+
+      } else if(pl.name === 'Mars'){
+        // ── 火星（赤い惑星）──
+        ctx.save();
+        const mg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*7);
+        mg.addColorStop(0,'rgba(248,113,113,0.5)');
+        mg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r*7,0,Math.PI*2);
+        ctx.fillStyle=mg; ctx.fill();
+        const mbg = ctx.createRadialGradient(p.x-r*0.3,p.y-r*0.3,0,p.x,p.y,r);
+        mbg.addColorStop(0,'#fca5a5');
+        mbg.addColorStop(0.6,'#ef4444');
+        mbg.addColorStop(1,'#991b1b');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fillStyle=mbg; ctx.fill();
+        // 極冠（白い点）
+        ctx.beginPath(); ctx.arc(p.x, p.y-r*0.7, r*0.25, 0, Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.fill();
+        ctx.restore();
+        if(showLabels){
+          ctx.font="bold 13px sans-serif";
+          ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=3;
+          ctx.strokeText('♂ 火星', p.x+r+5, p.y+4);
+          ctx.fillStyle='#f87171';
+          ctx.fillText('♂ 火星', p.x+r+5, p.y+4);
+        }
+
+      } else if(pl.name === 'Venus'){
+        // ── 金星（明るい白黄色）──
+        ctx.save();
+        const vg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*9);
+        vg.addColorStop(0,'rgba(253,230,138,0.6)');
+        vg.addColorStop(0.3,'rgba(253,230,138,0.2)');
+        vg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r*9,0,Math.PI*2);
+        ctx.fillStyle=vg; ctx.fill();
+        const vbg = ctx.createRadialGradient(p.x-r*0.3,p.y-r*0.3,0,p.x,p.y,r);
+        vbg.addColorStop(0,'#fffde7');
+        vbg.addColorStop(0.5,'#fde68a');
+        vbg.addColorStop(1,'#f59e0b');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fillStyle=vbg; ctx.fill();
+        ctx.restore();
+        if(showLabels){
+          ctx.font="bold 13px sans-serif";
+          ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=3;
+          ctx.strokeText('♀ 金星', p.x+r+5, p.y+4);
+          ctx.fillStyle='#fde68a';
+          ctx.fillText('♀ 金星', p.x+r+5, p.y+4);
+        }
+
+      } else if(pl.name === 'Mercury'){
+        // ── 水星 ──
+        ctx.save();
+        const hg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*5);
+        hg.addColorStop(0,'rgba(148,163,184,0.4)');
+        hg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r*5,0,Math.PI*2);
+        ctx.fillStyle=hg; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fillStyle='#94a3b8'; ctx.fill();
+        ctx.restore();
+        if(showLabels){
+          ctx.font="bold 11px sans-serif";
+          ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=3;
+          ctx.strokeText('☿ 水星', p.x+r+4, p.y+4);
+          ctx.fillStyle='#94a3b8';
+          ctx.fillText('☿ 水星', p.x+r+4, p.y+4);
+        }
+
       } else {
-        // ── 通常惑星の描画 ──
+        // ── その他の惑星（太陽など）──
         const glw = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*8);
         glw.addColorStop(0,pl.color+'cc');
         glw.addColorStop(0.3,pl.color+'44');
