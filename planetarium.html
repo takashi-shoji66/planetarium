@@ -76,9 +76,26 @@
 #changelog .cl-item { color:#94a3b8; padding-left:8px; }
 #changelog .cl-item::before { content:'→ '; color:#4a5a7a; }
 /* 月の位置・形 */
-.moon-symbol {
-  font-size:1.4rem; line-height:1;
+.moon-symbol { font-size:1.4rem; line-height:1; }
+
+/* 月インジケーター（画面端の矢印） */
+#moon-indicator {
+  position:fixed; z-index:20;
+  font-size:1.2rem; pointer-events:none;
+  filter: drop-shadow(0 0 6px rgba(240,240,180,0.8));
+  transition: left 0.3s, top 0.3s, transform 0.3s;
+  display:none;
 }
+#moon-indicator.show { display:block; }
+#moon-indicator-label {
+  position:fixed; z-index:20;
+  font-family:'Orbitron',monospace;
+  font-size:0.48rem; color:#e8e8c8;
+  pointer-events:none;
+  text-shadow:0 0 6px rgba(0,0,0,0.9);
+  display:none;
+}
+#moon-indicator-label.show { display:block; }
 </style>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:none; }
@@ -319,6 +336,9 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
   </div>
 </div>
 
+<!-- 月インジケーター -->
+<div id="moon-indicator">🌙</div>
+<div id="moon-indicator-label"></div>
 <div id="tooltip">
   <div id="tooltip-name"></div>
   <div id="tooltip-info"></div>
@@ -758,8 +778,9 @@ function draw(){
     const pos = raDecToAltAz(p.raDeg, p.decDeg, lat, lon, now);
     return {...p, ...pos};
   });
-  // 月相をHUDに表示
-  updateMoonHUD(moonData);
+  // 月相をHUDに表示（月の現在のalt/az含む）
+  const moonPos = raDecToAltAz(moonData.raDeg, moonData.decDeg, lat, lon, now);
+  updateMoonHUD({...moonData, ...moonPos});
 
   // ── MILKY WAY ──
   if(showMilkyWay){
@@ -1248,12 +1269,56 @@ async function toggleAR(){
 // ARモード時のcanvas描画: 背景を塗りつぶさない
 const origDraw = draw;
 
-// 月相HUD表示
+// 月相HUD表示 + 画面端インジケーター
 function updateMoonHUD(moon){
+  // HUD更新
   const el = document.getElementById('moon-hud');
-  if(!el) return;
-  el.textContent = moon.phaseEmoji + ' ' + moon.phaseName;
-  el.title = `月相: ${moon.phaseName} (照明率 ${Math.round(moon.illumination*100)}%)`;
+  if(el){
+    el.textContent = moon.phaseEmoji + ' ' + moon.phaseName;
+    el.title = `月相: ${moon.phaseName} (照明率 ${Math.round(moon.illumination*100)}%)`;
+  }
+  // 月の画面上の位置を計算
+  if(moon.alt === undefined) return;
+  const p = project(moon.az, moon.alt);
+  const ind  = document.getElementById('moon-indicator');
+  const lbl  = document.getElementById('moon-indicator-label');
+  if(!ind || !lbl) return;
+
+  if(p.visible && moon.alt > -5){
+    // 画面内にある → インジケーター非表示（天体が直接見える）
+    ind.classList.remove('show');
+    lbl.classList.remove('show');
+  } else if(moon.alt < -15){
+    // 地平線の大幅下 → 非表示
+    ind.classList.remove('show');
+    lbl.classList.remove('show');
+  } else {
+    // 画面外だが空にある → 画面端に矢印表示
+    ind.classList.add('show');
+    lbl.classList.add('show');
+    // 月の方向ベクトルを計算して画面端に配置
+    const dAz  = ((moon.az - azCenter + 540) % 360) - 180;
+    const fovV = fovH * (H / W);
+    const dAlt = moon.alt - altCenter;
+    const margin = 40;
+    // 方向角度（画面座標系）
+    const angle = Math.atan2(-dAlt, dAz); // ラジアン
+    // 画面端のクランプ
+    const hw = W/2 - margin, hh = H/2 - margin;
+    const scale = Math.min(hw / Math.abs(Math.cos(angle)||0.001),
+                           hh / Math.abs(Math.sin(angle)||0.001));
+    const ex = W/2 + Math.cos(angle) * Math.min(scale, hw);
+    const ey = H/2 + Math.sin(angle) * Math.min(scale, hh);
+    ind.style.left  = (ex - 12) + 'px';
+    ind.style.top   = (ey - 12) + 'px';
+    ind.style.transform = `rotate(${angle}rad)`;
+    ind.textContent = moon.phaseEmoji;
+    // ラベル
+    const altStr = moon.alt >= 0 ? `+${moon.alt.toFixed(1)}°` : `${moon.alt.toFixed(1)}°`;
+    lbl.textContent = `月 ${moon.az.toFixed(0)}°${dirStr(moon.az)} ${altStr}`;
+    lbl.style.left = (ex - 20) + 'px';
+    lbl.style.top  = (ey + 14) + 'px';
+  }
 }
 
 // バージョン・更新履歴開閉
