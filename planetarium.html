@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>プラネタリウム</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:none; }
+html,body { width:100%; height:100%; overflow:hidden; background:#000; }
+#sky { display:block; width:100%; height:100%; }
+
+/* HUD */
+#hud {
+  position:fixed; top:0; left:0; right:0;
+  padding:10px 14px 8px;
+  background: linear-gradient(to bottom, rgba(0,0,8,0.85) 0%, transparent 100%);
+  display:flex; align-items:center; gap:10px;
+  z-index:10; pointer-events:none;
+}
+#hud-title {
+  font-family:'Orbitron',monospace;
+  font-size:0.65rem; letter-spacing:0.3em;
+  color:#7dd3fc; text-shadow:0 0 12px #7dd3fc;
+  flex:1;
+}
+#hud-time {
+  font-family:'Orbitron',monospace;
+  font-size:0.6rem; color:#4a5a7a;
+  letter-spacing:0.1em;
+}
+#hud-dir {
+  font-family:'Orbitron',monospace;
+  font-size:0.75rem; font-weight:700;
+  color:#fcd34d; text-shadow:0 0 10px #fcd34d;
+  min-width:50px; text-align:right;
+}
+
+/* BOTTOM BAR */
+#bottom {
+  position:fixed; bottom:0; left:0; right:0;
+  padding:8px 14px 16px;
+  background: linear-gradient(to top, rgba(0,0,8,0.9) 0%, transparent 100%);
+  z-index:10;
+  display:flex; flex-direction:column; gap:6px;
+}
+#status-row {
+  display:flex; align-items:center; gap:8px;
+}
+#status-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:#4a5a7a; flex-shrink:0;
+  transition:background 0.3s;
+}
+#status-dot.ok  { background:#4ade80; box-shadow:0 0 6px #4ade80; }
+#status-dot.warn{ background:#fcd34d; box-shadow:0 0 6px #fcd34d; }
+#status-dot.err { background:#f87171; box-shadow:0 0 6px #f87171; }
+#status-text { font-size:0.65rem; color:#4a5a7a; flex:1; }
+#perm-btn {
+  font-family:'Orbitron',monospace; font-size:0.58rem;
+  letter-spacing:0.08em; color:#7dd3fc;
+  background:rgba(125,211,252,0.1);
+  border:1px solid rgba(125,211,252,0.3);
+  border-radius:5px; padding:5px 9px;
+  cursor:pointer;
+}
+
+/* LEGEND */
+#legend {
+  display:flex; gap:12px; flex-wrap:wrap;
+}
+.leg-item {
+  display:flex; align-items:center; gap:4px;
+  font-size:0.58rem; color:#4a5a7a;
+}
+.leg-dot {
+  width:7px; height:7px; border-radius:50%;
+}
+
+/* TOOLTIP */
+#tooltip {
+  position:fixed; z-index:20;
+  background:rgba(4,7,15,0.92);
+  border:1px solid rgba(125,211,252,0.4);
+  border-radius:8px; padding:8px 12px;
+  pointer-events:none;
+  display:none;
+  backdrop-filter:blur(8px);
+}
+#tooltip-name {
+  font-family:'Orbitron',monospace; font-size:0.8rem;
+  color:#7dd3fc; margin-bottom:3px;
+}
+#tooltip-info { font-size:0.65rem; color:#94a3b8; line-height:1.6; }
+
+/* CONTROLS */
+#controls {
+  position:fixed; right:14px; top:50%;
+  transform:translateY(-50%);
+  display:flex; flex-direction:column; gap:8px;
+  z-index:10;
+}
+.ctrl-btn {
+  width:36px; height:36px;
+  background:rgba(4,7,15,0.7);
+  border:1px solid rgba(125,211,252,0.25);
+  border-radius:8px;
+  color:#7dd3fc; font-size:1.1rem;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; user-select:none;
+  transition:background 0.15s;
+}
+.ctrl-btn:active { background:rgba(125,211,252,0.15); }
+
+/* TOGGLE ROW */
+#toggles {
+  display:flex; gap:6px; flex-wrap:wrap;
+}
+.tog {
+  font-size:0.58rem; padding:3px 8px;
+  border-radius:12px; cursor:pointer; user-select:none;
+  border:1px solid rgba(255,255,255,0.1);
+  color:#4a5a7a; background:transparent;
+  transition:all 0.2s;
+}
+.tog.on { color:#e2e8f0; border-color:rgba(125,211,252,0.4); background:rgba(125,211,252,0.1); }
+
+/* SENSOR DEBUG PANEL */
+#sensor-panel {
+  position:fixed; top:52px; left:10px;
+  z-index:20;
+  background:rgba(4,7,15,0.88);
+  border:1px solid rgba(125,211,252,0.35);
+  border-radius:10px;
+  padding:10px 13px;
+  backdrop-filter:blur(10px);
+  min-width:190px;
+  font-family:'Orbitron',monospace;
+}
+#sensor-panel .sp-title {
+  font-size:0.55rem; letter-spacing:0.25em;
+  color:#4a5a7a; margin-bottom:8px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+#sensor-panel .sp-title span { color:#4ade80; font-size:0.5rem; }
+.sp-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:3px 0;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  gap:10px;
+}
+.sp-row:last-child { border-bottom:none; }
+.sp-key { font-size:0.55rem; color:#4a5a7a; letter-spacing:0.1em; white-space:nowrap; }
+.sp-val { font-size:0.8rem; font-weight:700; color:#7dd3fc; text-align:right; min-width:70px; }
+.sp-val.az  { color:#fcd34d; text-shadow:0 0 8px rgba(252,211,77,0.5); }
+.sp-val.alt { color:#4ade80; text-shadow:0 0 8px rgba(74,222,128,0.5); }
+.sp-val.beta{ color:#a78bfa; }
+.sp-val.alpha{ color:#fb923c; }
+.sp-val.ok  { color:#4ade80; }
+.sp-val.ng  { color:#f87171; }
+.sp-bar {
+  height:4px; border-radius:2px;
+  background:rgba(255,255,255,0.08);
+  margin-top:2px; overflow:hidden;
+}
+.sp-bar-fill {
+  height:100%; border-radius:2px;
+  background: linear-gradient(to right, #7dd3fc, #4ade80);
+  transition: width 0.1s;
+}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div id="hud">
+  <div id="hud-title">✦ PLANETARIUM</div>
+  <div id="hud-time" id="hud-time">--:--</div>
+  <div id="hud-dir">---°</div>
+</div>
+
+<!-- SENSOR DEBUG PANEL -->
+<div id="sensor-panel">
+  <div class="sp-title">📡 センサーデータ <span id="sp-live">● LIVE</span></div>
+  <div class="sp-row">
+    <div class="sp-key">方位角 AZ</div>
+    <div class="sp-val az" id="sp-az">---°</div>
+  </div>
+  <div class="sp-row">
+    <div class="sp-key">高度角 ALT</div>
+    <div class="sp-val alt" id="sp-alt">---°</div>
+  </div>
+  <div class="sp-row">
+    <div class="sp-key">alpha（Z軸）</div>
+    <div class="sp-val alpha" id="sp-alpha">---°</div>
+  </div>
+  <div class="sp-row">
+    <div class="sp-key">beta（X軸）</div>
+    <div class="sp-val beta" id="sp-beta">---°</div>
+  </div>
+  <div class="sp-row">
+    <div class="sp-key">gamma（Y軸）</div>
+    <div class="sp-val beta" id="sp-gamma">---°</div>
+  </div>
+  <div class="sp-row">
+    <div class="sp-key">webkitCompass</div>
+    <div class="sp-val" id="sp-webkit">---°</div>
+  </div>
+  <div class="sp-row">
+    <div class="sp-key">イベント種別</div>
+    <div class="sp-val" id="sp-type" style="font-size:0.55rem">---</div>
+  </div>
+  <div class="sp-row">
+    <div class="sp-key">センサー状態</div>
+    <div class="sp-val" id="sp-status">待機中</div>
+  </div>
+  <div class="sp-bar"><div class="sp-bar-fill" id="sp-bar" style="width:0%"></div></div>
+  <div id="sp-log" style="margin-top:8px;font-size:0.5rem;color:#4a5a7a;line-height:1.6;font-family:'Orbitron',monospace;white-space:pre-wrap;word-break:break-all;"></div>
+</div>
+
+<div id="controls">
+  <div class="ctrl-btn" id="zoomIn">＋</div>
+  <div class="ctrl-btn" id="zoomOut">－</div>
+  <div class="ctrl-btn" id="resetView">⌖</div>
+</div>
+
+<div id="bottom">
+  <div id="toggles">
+    <div class="tog on" data-key="stars">★ 星</div>
+    <div class="tog on" data-key="consts">⋯ 星座線</div>
+    <div class="tog on" data-key="labels">🏷 名前</div>
+    <div class="tog on" data-key="planets">♄ 惑星</div>
+    <div class="tog on" data-key="milkyway">🌌 銀河</div>
+  </div>
+  <div id="status-row">
+    <div id="status-dot"></div>
+    <div id="status-text">許可ボタンを押してください</div>
+    <button id="perm-btn" onclick="requestAll()">🔓 センサー許可</button>
+  </div>
+  <div id="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#fff"></div>恒星</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#fcd34d"></div>惑星</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#f87171"></div>火星</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#7dd3fc"></div>星座線</div>
+  </div>
+</div>
+
+<div id="tooltip">
+  <div id="tooltip-name"></div>
+  <div id="tooltip-info"></div>
+</div>
+
+<!-- iOS用: 大きな許可ボタン -->
+<div id="perm-overlay" style="
+  position:fixed; inset:0; z-index:50;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(2,5,15,0.85); backdrop-filter:blur(6px);
+">
+  <div style="font-family:'Orbitron',monospace; font-size:0.65rem; letter-spacing:0.25em; color:#7dd3fc; text-shadow:0 0 16px #7dd3fc; margin-bottom:16px;">✦ PLANETARIUM</div>
+  <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:28px; text-align:center; line-height:1.8;">
+    センサーと位置情報の許可が必要です<br>
+    <span style="font-size:0.65rem; color:#4a5a7a;">スマートフォンの向きを星図に反映します</span>
+  </div>
+  <button onclick="startApp()" style="
+    font-family:'Orbitron',monospace; font-size:0.85rem; letter-spacing:0.2em;
+    color:#04070f; background:#7dd3fc;
+    border:none; border-radius:12px;
+    padding:16px 36px; cursor:pointer;
+    box-shadow: 0 0 30px rgba(125,211,252,0.5);
+  ">🔓 許可して開始</button>
+  <div style="margin-top:14px; font-size:0.6rem; color:#4a5a7a; font-family:'Orbitron',monospace;">タップするとシステムダイアログが表示されます</div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════
+//  MATH HELPERS
+// ══════════════════════════════════════════════
+const DEG = Math.PI/180;
+const RAD = 180/Math.PI;
+const sin = a => Math.sin(a*DEG), cos = a => Math.cos(a*DEG);
+const asin = v => Math.asin(Math.max(-1,Math.min(1,v)))*RAD;
+const acos = v => Math.acos(Math.max(-1,Math.min(1,v)))*RAD;
+const mod360 = a => ((a%360)+360)%360;
+
+// ══════════════════════════════════════════════
+//  ASTRONOMY CORE
+// ══════════════════════════════════════════════
+function getJD(date){ return date.getTime()/86400000 + 2440587.5; }
+
+function getLST(lon, date){
+  const jd = getJD(date);
+  const T  = (jd-2451545.0)/36525;
+  let GMST = 280.46061837 + 360.98564736629*(jd-2451545.0) + 0.000387933*T*T;
+  return mod360(GMST + lon);
+}
+
+function raDecToAltAz(raDeg, decDeg, lat, lon, date){
+  const LST = getLST(lon, date);
+  const HA  = mod360(LST - raDeg);
+  const sinAlt = sin(lat)*sin(decDeg) + cos(lat)*cos(decDeg)*cos(HA);
+  const alt = asin(sinAlt);
+  const cosAz = (sin(decDeg)-sin(lat)*sinAlt)/(cos(lat)*cos(alt));
+  let az = acos(cosAz);
+  if(sin(HA*DEG)>0) az = 360-az;
+  return {alt, az};
+}
+
+// ══════════════════════════════════════════════
+//  PLANET POSITIONS (VSOP87 simplified)
+// ══════════════════════════════════════════════
+function sunPosition(jd){
+  const T = (jd-2451545.0)/36525;
+  const L0= mod360(280.46646+36000.76983*T);
+  const M = mod360(357.52911+35999.05029*T);
+  const C = (1.914602-0.004817*T)*sin(M) + 0.019993*sin(2*M);
+  const sunLon = L0+C;
+  const epsilon = 23.439291-0.013004*T;
+  const raDeg = mod360(Math.atan2(cos(epsilon)*sin(sunLon), cos(sunLon))*RAD);
+  const decDeg = asin(sin(epsilon)*sin(sunLon));
+  return {raDeg, decDeg, name:'Sun', nameJP:'太陽', color:'#fde68a', radius:5};
+}
+
+function planetPos(jd, a, e, i, L0, w0, O0, dL, de, di, dw, dO, name, nameJP, color, r){
+  const T  = (jd-2451545.0)/36525;
+  const L  = mod360(L0 + dL*T);
+  const w  = mod360(w0 + dw*T);
+  const O  = mod360(O0 + dO*T);
+  const M  = mod360(L - w);
+  // Kepler equation (simplified)
+  let E = M + (180/Math.PI)*e*sin(M)*(1+e*cos(M));
+  for(let k=0;k<5;k++) E = E - (E - (180/Math.PI)*e*sin(E) - M)/(1 - e*cos(E));
+  const v = mod360(2*Math.atan2(Math.sqrt(1+e)*sin(E/2*DEG), Math.sqrt(1-e)*cos(E/2*DEG))*RAD);
+  const r_ = a*(1-e*cos(E));
+  // Heliocentric ecliptic coords
+  const sinL = sin(v+w-O)*cos(i) ; // simplified
+  const lon_ = mod360(O + Math.atan2(sin(v+w-O)*cos(i*DEG), cos((v+w-O)*DEG))*RAD);
+  const lat_ = asin(sin((v+w-O)*DEG)*sin(i*DEG));
+  // Convert to equatorial (simplified: use ecliptic lon/lat)
+  const epsilon = 23.439291;
+  const raDeg  = mod360(Math.atan2(sin(lon_)*cos(epsilon*DEG)-Math.tan(lat_*DEG)*sin(epsilon*DEG), cos(lon_*DEG))*RAD);
+  const decDeg = asin(sin(lat_*DEG)*cos(epsilon*DEG)+cos(lat_*DEG)*sin(epsilon*DEG)*sin(lon_*DEG));
+  return {raDeg, decDeg, name, nameJP, color, radius:r};
+}
+
+function getPlanets(jd){
+  return [
+    planetPos(jd,0.38710,0.20563,7.005,252.250,77.456,48.330,149472.67,0.000059,-23.51,0.5765,-0.1021,'Mercury','水星','#94a3b8',3),
+    planetPos(jd,0.72333,0.00677,3.3947,181.979,131.563,76.679,58517.816,0.0000153,-2.86,0.5089,-0.2717,'Venus','金星','#fde68a',4),
+    planetPos(jd,1.52366,0.09341,1.8497,355.433,336.060,49.558,19140.302,0.000045,-25.47,0.4739,-0.2144,'Mars','火星','#f87171',4),
+    planetPos(jd,5.20336,0.04839,1.3053,34.351,14.331,100.464,3034.905,-0.000121,-4.15,0.2590,0.1543,'Jupiter','木星','#fb923c',5),
+    planetPos(jd,9.53707,0.05415,2.4845,50.077,92.432,113.665,1222.494,-0.000151,-6.11,0.3900,-0.1526,'Saturn','土星','#fcd34d',5),
+  ];
+}
+
+// ══════════════════════════════════════════════
+//  STAR CATALOG  (ra°, dec°, mag, name, nameJP)
+// ══════════════════════════════════════════════
+const STARS = [
+  // Orion
+  [83.82,  -5.91, 0.12, 'Rigel',    'リゲル'],
+  [88.79,   7.41, 0.45, 'Betelgeuse','ベテルギウス'],
+  [81.28,  -2.0,  2.06, 'Bellatrix','ベラトリックス'],
+  [84.05, -21.06, 0.86, 'Saiph',   'サイフ'],
+  [84.41,  -1.20, 1.70, 'Alnilam', 'アルニラム'],
+  [83.00,  -0.30, 1.77, 'Alnitak', 'アルニタク'],
+  [85.19,  -1.94, 2.23, 'Mintaka', 'ミンタカ'],
+  // Big Dipper / Ursa Major
+  [165.93, 61.75, 1.81, 'Dubhe',   'ドゥーベ'],
+  [165.46, 56.38, 2.37, 'Merak',   'メラク'],
+  [178.46, 53.69, 2.44, 'Phecda',  'フェクダ'],
+  [183.86, 57.03, 3.31, 'Megrez',  'メグレズ'],
+  [193.51, 55.96, 1.77, 'Alioth',  'アリオス'],
+  [200.98, 54.92, 2.23, 'Mizar',   'ミザール'],
+  [206.89, 49.31, 1.85, 'Alkaid',  'アルカイド'],
+  // Scorpius
+  [247.36,-26.43, 0.96, 'Antares', 'アンタレス'],
+  [240.08,-22.62, 2.29, 'Graffias','グラフィアス'],
+  [252.97,-34.29, 2.54, 'Shaula',  'シャウラ'],
+  [253.58,-37.10, 2.62, 'Lesath',  'レサト'],
+  // Cassiopeia
+  [10.13,  56.54, 2.23, 'Schedar', 'シェダル'],
+  [14.18,  60.72, 2.27, 'Caph',    'カフ'],
+  [9.24,   59.15, 2.68, 'Gamma Cas','ガンマカシオペア'],
+  [21.45,  60.24, 2.66, 'Ruchbah', 'ルフバ'],
+  [28.60,  63.67, 3.38, 'Segin',   'セギン'],
+  // Leo
+  [152.09, 11.97, 1.35, 'Regulus', 'レグルス'],
+  [177.26, 14.57, 2.14, 'Denebola','デネボラ'],
+  [154.99, 19.84, 2.01, 'Algieba', 'アルギエバ'],
+  // Gemini
+  [113.65, 31.89, 1.58, 'Pollux',  'ポルックス'],
+  [113.02, 28.03, 2.00, 'Castor',  'カストル'],
+  [100.98, 25.13, 1.93, 'Alhena',  'アルヘナ'],
+  // Main stars
+  [101.29,-16.72, -1.46,'Sirius',  'シリウス'],
+  [95.99, -52.70,  -0.72,'Canopus','カノープス'],
+  [219.92, -60.83, -0.01,'Centauri A','アルファ・ケンタウリ'],
+  [213.92, 19.18,  -0.05,'Arcturus','アークトゥルス'],
+  [279.23, 38.78,   0.03,'Vega',   'ベガ'],
+  [116.33,-28.97,   0.35,'Adhara', 'アドハラ'],
+  [297.70,  8.87,   0.77,'Altair', 'アルタイル'],
+  [310.36, 45.28,   1.25,'Deneb',  'デネブ'],
+  [114.83,-26.39,   1.50,'Wezen',  'ウェゼン'],
+  [24.43,  57.82,   2.23,'Mirfak', 'ミルファク'],
+  [68.98,  16.51,   0.87,'Aldebaran','アルデバラン'],
+  [79.17,  45.99,   0.08,'Capella','カペラ'],
+  [116.33,-28.97,   0.35,'Adhara', 'アドハラ'],
+  [201.30,-11.16,   0.97,'Spica',  'スピカ'],
+  [191.93,-59.69,   1.63,'Mimosa', 'ミモザ'],
+  [187.79,-57.11,   0.77,'Acrux',  'アクルックス'],
+  [344.41,-29.62,   1.16,'Fomalhaut','フォーマルハウト'],
+  [158.00,-61.69,   2.21,'Avior',  'アヴィオール'],
+  [6.57,  -77.25,   2.80,'Achernar','アケルナル'],
+  // Crux
+  [183.79,-57.11,   0.77,'Acrux',  'アクルックス'],
+  [186.65,-63.10,   1.25,'Mimosa', 'ミモザ'],
+  [187.79,-57.11,   1.64,'Gacrux', 'ガクルックス'],
+  // Cygnus
+  [310.36, 45.28,   1.25,'Deneb',  'デネブ'],
+  [305.56, 40.26,   2.20,'Sadr',   'サドル'],
+  [311.55, 33.97,   2.48,'Gienah Cyg','ギエナ'],
+  // Lyra
+  [279.23, 38.78,   0.03,'Vega',   'ベガ'],
+  [282.52, 32.69,   3.25,'Sulafat','スラファト'],
+  // Aquila
+  [297.70,  8.87,   0.77,'Altair', 'アルタイル'],
+  [296.56, 10.61,   2.72,'Tarazed','タラゼド'],
+  // Perseus
+  [51.08,  49.86,   1.79,'Mirfak', 'ミルファク'],
+  [47.04,  40.96,   2.12,'Algol',  'アルゴル'],
+  // Auriga
+  [79.17,  45.99,   0.08,'Capella','カペラ'],
+  [74.25,  33.17,   2.65,'Menkalinan','メンカリナン'],
+  // Virgo
+  [201.30,-11.16,   0.97,'Spica',  'スピカ'],
+  [193.90,-17.54,   2.74,'Porrima','ポリマ'],
+  // Taurus
+  [68.98,  16.51,   0.87,'Aldebaran','アルデバラン'],
+  [56.87,  24.11,   2.87,'Alcyone','アルキオーネ'],
+  // Canis Minor
+  [114.83,  5.22,   0.34,'Procyon','プロキオン'],
+  // Hydra
+  [141.90,-29.30,   1.99,'Alphard','アルファルド'],
+];
+
+// Deduplicate
+const seen = new Set();
+const STAR_LIST = STARS.filter(s=>{
+  const k=s[3]; if(seen.has(k)) return false; seen.add(k); return true;
+});
+
+// ══════════════════════════════════════════════
+//  CONSTELLATION LINES  [star-name, star-name]
+// ══════════════════════════════════════════════
+const CONST_LINES = [
+  // Orion
+  ['Rigel','Saiph'],['Rigel','Mintaka'],['Betelgeuse','Mintaka'],['Betelgeuse','Bellatrix'],
+  ['Alnitak','Mintaka'],['Alnitak','Alnilam'],['Alnilam','Mintaka'],
+  ['Bellatrix','Mintaka'],['Saiph','Alnilam'],
+  // Ursa Major (Big Dipper)
+  ['Dubhe','Merak'],['Merak','Phecda'],['Phecda','Megrez'],['Megrez','Dubhe'],
+  ['Megrez','Alioth'],['Alioth','Mizar'],['Mizar','Alkaid'],
+  // Scorpius
+  ['Graffias','Antares'],['Antares','Shaula'],['Shaula','Lesath'],
+  // Cassiopeia
+  ['Schedar','Caph'],['Caph','Gamma Cas'],['Gamma Cas','Ruchbah'],['Ruchbah','Segin'],
+  // Leo
+  ['Regulus','Algieba'],['Algieba','Denebola'],
+  // Gemini
+  ['Castor','Pollux'],['Pollux','Alhena'],
+  // Cygnus (Northern Cross)
+  ['Deneb','Sadr'],['Sadr','Gienah Cyg'],
+  // Lyra
+  ['Vega','Sulafat'],
+  // Aquila
+  ['Altair','Tarazed'],
+];
+
+// Constellation label positions (approx RA°, Dec°)
+const CONST_LABELS = [
+  {name:'オリオン座', ra:83, dec:5},
+  {name:'おおぐま座', ra:183, dec:57},
+  {name:'さそり座',   ra:247, dec:-26},
+  {name:'カシオペア座',ra:14, dec:60},
+  {name:'しし座',     ra:165, dec:15},
+  {name:'ふたご座',   ra:113, dec:28},
+  {name:'はくちょう座',ra:310, dec:45},
+  {name:'こと座',     ra:279, dec:38},
+  {name:'わし座',     ra:297, dec:8},
+  {name:'ペルセウス座',ra:51,  dec:49},
+  {name:'ぎょしゃ座', ra:79,  dec:45},
+  {name:'おとめ座',   ra:201, dec:-5},
+  {name:'おうし座',   ra:69,  dec:16},
+];
+
+// ══════════════════════════════════════════════
+//  MILKY WAY (simplified arc points)
+// ══════════════════════════════════════════════
+const MILKY_PTS = [
+  [266,-29],[271,-23],[276,-18],[281,-11],[286,-5],[291,1],[296,7],[301,13],
+  [306,19],[311,25],[316,31],[321,37],[326,43],[331,48],[336,52],[341,55],
+  [346,57],[351,58],[356,58],[1,57],[6,55],[11,52],[16,48],[21,43],
+  [26,37],[31,30],[36,22],[41,14],[46,6],[51,-2],[56,-10],[61,-18],
+  [66,-25],[71,-31],[76,-36],[81,-40],[86,-43],[91,-45],[96,-46],
+  [101,-47],[106,-47],[111,-46],[116,-45],[121,-43],[126,-40],[131,-36],
+  [136,-31],[141,-25],[146,-18],[151,-10],[156,-2],[161,6],[166,14],
+  [171,22],[176,30],[181,37],[186,43],[191,48],[196,52],[201,55],
+  [206,57],[211,58],[216,58],[221,57],[226,55],[231,52],[236,48],
+  [241,43],[246,37],[251,30],[256,22],[261,-15],
+];
+
+// ══════════════════════════════════════════════
+//  CANVAS & STATE
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('sky');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+let lat = 35.68, lon = 139.69; // Tokyo default
+let azCenter = 180;  // compass heading (degrees) at center of view
+let altCenter = 30;  // altitude at center of view (degrees)
+let fovH = 80;       // horizontal FOV in degrees
+
+let showStars     = true;
+let showConsts    = true;
+let showLabels    = true;
+let showPlanets   = true;
+let showMilkyWay  = true;
+
+// Touch/drag
+let isDragging = false;
+let dragStartX, dragStartY, dragStartAz, dragStartAlt;
+
+// Sensor
+let useSensor = false;
+
+// Computed once per frame
+let cachedAltAz = [];
+let cachedPlanets = [];
+
+// ══════════════════════════════════════════════
+//  PROJECTION  (alt/az → canvas xy)
+// ══════════════════════════════════════════════
+function project(az, alt){
+  const fovV = fovH * (H/W);
+  const dAz  = mod360(az - azCenter + 180) - 180; // signed diff
+  const dAlt = alt - altCenter;
+  const x = W/2 + (dAz/fovH)*W;
+  const y = H/2 - (dAlt/fovV)*H;
+  return {x, y, visible: Math.abs(dAz)<fovH*0.75 && Math.abs(dAlt)<fovV*0.75};
+}
+
+// ══════════════════════════════════════════════
+//  MAGNITUDE → SIZE
+// ══════════════════════════════════════════════
+function magToRadius(mag){
+  return Math.max(0.5, 3.5 - mag*0.5);
+}
+function magToAlpha(mag){
+  return Math.max(0.15, Math.min(1, 1 - mag*0.12));
+}
+
+// ══════════════════════════════════════════════
+//  BUILD STAR LOOKUP
+// ══════════════════════════════════════════════
+const starByName = {};
+STAR_LIST.forEach(s=>{ starByName[s[3]] = s; });
+
+// ══════════════════════════════════════════════
+//  DRAW
+// ══════════════════════════════════════════════
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // Sky gradient
+  const grad = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.8);
+  grad.addColorStop(0,'#060d1f');
+  grad.addColorStop(1,'#020508');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  const now = new Date();
+  const jd  = getJD(now);
+
+  // Pre-compute alt/az for all stars
+  cachedAltAz = STAR_LIST.map(s=>{
+    return raDecToAltAz(s[0], s[1], lat, lon, now);
+  });
+
+  // Pre-compute planets
+  cachedPlanets = [sunPosition(jd), ...getPlanets(jd)].map(p=>{
+    const pos = raDecToAltAz(p.raDeg, p.decDeg, lat, lon, now);
+    return {...p, ...pos};
+  });
+
+  // ── MILKY WAY ──
+  if(showMilkyWay){
+    ctx.save();
+    const pts = MILKY_PTS.map(([ra,dec])=>{
+      const pos = raDecToAltAz(ra, dec, lat, lon, now);
+      return project(pos.az, pos.alt);
+    }).filter(p=>true);
+    // Draw as thick blurry path
+    ctx.lineWidth = W/8;
+    ctx.strokeStyle='rgba(100,120,180,0.04)';
+    ctx.filter='blur(24px)';
+    ctx.beginPath();
+    pts.forEach((p,i)=>{
+      if(i===0) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    });
+    ctx.stroke();
+    ctx.filter='none';
+    // Thinner second pass
+    ctx.lineWidth = W/14;
+    ctx.strokeStyle='rgba(140,160,220,0.05)';
+    ctx.filter='blur(12px)';
+    ctx.beginPath();
+    pts.forEach((p,i)=>{
+      if(i===0) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    });
+    ctx.stroke();
+    ctx.filter='none';
+    ctx.restore();
+  }
+
+  // ── CONSTELLATION LINES ──
+  if(showConsts){
+    ctx.save();
+    ctx.strokeStyle='rgba(125,211,252,0.25)';
+    ctx.lineWidth=0.8;
+    ctx.setLineDash([3,5]);
+    CONST_LINES.forEach(([a,b])=>{
+      const sa=starByName[a], sb=starByName[b];
+      if(!sa||!sb) return;
+      const ia=STAR_LIST.indexOf(sa), ib=STAR_LIST.indexOf(sb);
+      if(ia<0||ib<0) return;
+      const pa=project(cachedAltAz[ia].az, cachedAltAz[ia].alt);
+      const pb=project(cachedAltAz[ib].az, cachedAltAz[ib].alt);
+      if(!pa.visible && !pb.visible) return;
+      ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ── STARS ──
+  if(showStars){
+    STAR_LIST.forEach((s,i)=>{
+      const pos = cachedAltAz[i];
+      if(pos.alt < -5) return;
+      const p = project(pos.az, pos.alt);
+      if(!p.visible) return;
+      const r = magToRadius(s[2]);
+      const alpha = magToAlpha(s[2]);
+
+      // Glow for bright stars
+      if(s[2] < 1.5){
+        const glw = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*6);
+        glw.addColorStop(0,`rgba(200,220,255,${alpha*0.4})`);
+        glw.addColorStop(1,'rgba(200,220,255,0)');
+        ctx.beginPath(); ctx.arc(p.x,p.y,r*6,0,Math.PI*2);
+        ctx.fillStyle=glw; ctx.fill();
+      }
+      // Star core
+      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(220,235,255,${alpha})`; ctx.fill();
+
+      // Label
+      if(showLabels && s[2] < 1.8){
+        ctx.font=`${Math.max(9,11-s[2]*2)}px 'Kaisei Tokumin', serif`;
+        ctx.fillStyle=`rgba(180,200,230,${alpha*0.8})`;
+        ctx.fillText(s[4], p.x+r+3, p.y-r-2);
+      }
+    });
+  }
+
+  // ── CONSTELLATION LABELS ──
+  if(showLabels){
+    ctx.save();
+    ctx.font="10px 'Orbitron', monospace";
+    ctx.fillStyle='rgba(125,211,252,0.35)';
+    CONST_LABELS.forEach(cl=>{
+      const pos = raDecToAltAz(cl.ra, cl.dec, lat, lon, now);
+      if(pos.alt < -3) return;
+      const p = project(pos.az, pos.alt);
+      if(!p.visible) return;
+      ctx.fillText(cl.name, p.x, p.y);
+    });
+    ctx.restore();
+  }
+
+  // ── PLANETS ──
+  if(showPlanets){
+    cachedPlanets.forEach(pl=>{
+      if(pl.alt < -5) return;
+      const p = project(pl.az, pl.alt);
+      if(!p.visible) return;
+      const r = pl.radius;
+      // Glow
+      const glw = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*5);
+      glw.addColorStop(0,pl.color.replace(')',',0.6)').replace('rgb','rgba'));
+      glw.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath(); ctx.arc(p.x,p.y,r*5,0,Math.PI*2);
+      ctx.fillStyle=glw; ctx.fill();
+      // Core
+      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+      ctx.fillStyle=pl.color; ctx.fill();
+      if(showLabels){
+        ctx.font="10px 'Kaisei Tokumin', serif";
+        ctx.fillStyle=pl.color;
+        ctx.fillText(pl.nameJP, p.x+r+3, p.y-2);
+      }
+    });
+  }
+
+  // ── HORIZON LINE ──
+  drawHorizon();
+
+  // ── CROSSHAIR ──
+  ctx.save();
+  ctx.strokeStyle='rgba(125,211,252,0.2)';
+  ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2-20,H/2); ctx.lineTo(W/2+20,H/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W/2,H/2-20); ctx.lineTo(W/2,H/2+20); ctx.stroke();
+  ctx.restore();
+
+  // HUD
+  updateHUD(now);
+}
+
+function drawHorizon(){
+  const fovV = fovH*(H/W);
+  // horizon alt=0
+  const yH = H/2 + (altCenter/fovV)*H;
+  if(yH<0||yH>H) return;
+  const grad = ctx.createLinearGradient(0,yH,W,yH);
+  grad.addColorStop(0,'rgba(0,40,80,0)');
+  grad.addColorStop(0.2,'rgba(20,80,40,0.3)');
+  grad.addColorStop(0.5,'rgba(20,80,40,0.4)');
+  grad.addColorStop(0.8,'rgba(20,80,40,0.3)');
+  grad.addColorStop(1,'rgba(0,40,80,0)');
+  ctx.strokeStyle=grad; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,yH); ctx.lineTo(W,yH); ctx.stroke();
+  // Ground fill below
+  ctx.fillStyle='rgba(10,30,15,0.4)';
+  ctx.fillRect(0,yH,W,H-yH);
+  // "地平線" label
+  ctx.font="9px 'Orbitron',monospace";
+  ctx.fillStyle='rgba(100,180,100,0.4)';
+  ctx.fillText('地平線', 10, yH-4);
+}
+
+function updateHUD(now){
+  const pad = n=>String(n).padStart(2,'0');
+  document.getElementById('hud-time').textContent =
+    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  document.getElementById('hud-dir').textContent =
+    `${Math.round(mod360(azCenter))}° ${dirStr(azCenter)}`;
+}
+
+function dirStr(az){
+  const d=['N','NE','E','SE','S','SW','W','NW'];
+  return d[Math.round(mod360(az)/45)%8];
+}
+
+// ══════════════════════════════════════════════
+//  SENSOR
+// ══════════════════════════════════════════════
+// iOSはdeviceorientationでwebkitCompassHeadingを提供する
+// Androidはdeviceorientationabsoluteでalphaを提供する
+// 両方のイベントを同じハンドラで処理し、優先度で方位を決める
+
+let lastAz = null; // 二重発火防止用
+let sensorEventCount = 0;
+
+// デバッグパネル更新
+function updateDebugPanel(e, az, alt){
+  sensorEventCount++;
+  const webkit = e.webkitCompassHeading;
+  document.getElementById('sp-az').textContent    = az != null ? az.toFixed(1)+'°' : '---';
+  document.getElementById('sp-alt').textContent   = alt != null ? alt.toFixed(1)+'°' : '---';
+  document.getElementById('sp-alpha').textContent = e.alpha != null ? e.alpha.toFixed(1)+'°' : '---';
+  document.getElementById('sp-beta').textContent  = e.beta  != null ? e.beta.toFixed(1)+'°' : '---';
+  document.getElementById('sp-gamma').textContent = e.gamma != null ? e.gamma.toFixed(1)+'°' : '---';
+  document.getElementById('sp-webkit').textContent= webkit  != null ? webkit.toFixed(1)+'°' : '非対応';
+  document.getElementById('sp-type').textContent  = e.type + (e.absolute?' [ABS]':' [REL]');
+  document.getElementById('sp-status').textContent= '受信中 #'+sensorEventCount;
+  document.getElementById('sp-status').className  = 'sp-val ok';
+  // 方位バー（0-360 → 0-100%）
+  if(az != null) document.getElementById('sp-bar').style.width = (az/360*100).toFixed(1)+'%';
+  // LIVEインジケーター点滅
+  const live = document.getElementById('sp-live');
+  live.style.opacity = sensorEventCount%2===0 ? '1' : '0.3';
+}
+
+function onOrientation(e){
+  // 常にデバッグパネルを更新（useSensorに関わらず）
+  let az = null;
+  // iOS: webkitCompassHeadingが最も信頼できる（真北基準）
+  if(e.webkitCompassHeading != null && e.webkitCompassHeading >= 0){
+    az = e.webkitCompassHeading;
+  }
+  // Android absolute
+  else if(e.absolute === true && e.alpha != null){
+    az = (360 - e.alpha) % 360;
+  }
+  // フォールバック
+  else if(e.alpha != null){
+    az = (360 - e.alpha) % 360;
+  }
+
+  // beta: スマホの仰角
+  let beta = (e.beta != null) ? e.beta : 90;
+  if(beta >  180) beta -= 360;
+  if(beta < -180) beta += 360;
+  const alt = az !== null ? Math.max(-90, Math.min(90, beta - 90)) : null;
+
+  // 常にデバッグパネルへ反映
+  updateDebugPanel(e, az, alt);
+
+  if(!useSensor) return;
+  if(az === null) return;
+
+  // 同じazが2イベントから来た場合の重複を排除
+  if(lastAz !== null && Math.abs(((az - lastAz + 540)%360)-180) < 0.01) return;
+  lastAz = az;
+
+  // 即時反映
+  const dAz = ((az - azCenter + 540) % 360) - 180;
+  azCenter  = mod360(azCenter + dAz);
+  altCenter = alt;
+}
+
+function startSensor(){
+  window.addEventListener('deviceorientationabsolute', onOrientation, true);
+  window.addEventListener('deviceorientation',         onOrientation, true);
+}
+
+// ══════════════════════════════════════════════
+//  PERMISSIONS
+// ══════════════════════════════════════════════
+async function requestAll(){
+  const btn = document.getElementById('perm-btn');
+  btn.disabled=true; btn.textContent='処理中...';
+  debugLog('許可ボタン押下');
+
+  // ── センサー許可 ──
+  if(typeof DeviceOrientationEvent === 'undefined'){
+    debugLog('DeviceOrientationEvent: 未定義（非対応ブラウザ）');
+  } else if(typeof DeviceOrientationEvent.requestPermission === 'function'){
+    // iOS 13+
+    debugLog('iOS: requestPermission呼び出し中...');
+    try{
+      const result = await DeviceOrientationEvent.requestPermission();
+      debugLog('iOS許可結果: ' + result);
+      if(result === 'granted'){
+        useSensor = true;
+        startSensor();
+        debugLog('センサー開始OK');
+      } else {
+        debugLog('センサー拒否: ' + result);
+        document.getElementById('sp-status').textContent = '許可拒否';
+        document.getElementById('sp-status').className = 'sp-val ng';
+      }
+    } catch(err){
+      debugLog('requestPermissionエラー: ' + err.message);
+      document.getElementById('sp-status').textContent = 'エラー: '+err.message;
+      document.getElementById('sp-status').className = 'sp-val ng';
+    }
+  } else {
+    // Android / 非iOS
+    debugLog('非iOS: 自動センサー開始');
+    useSensor = true;
+    startSensor();
+  }
+
+  // ── 位置情報 ──
+  if(navigator.geolocation){
+    setStatus('warn','位置情報を取得中...');
+    navigator.geolocation.getCurrentPosition(pos=>{
+      lat=pos.coords.latitude; lon=pos.coords.longitude;
+      setStatus('ok',`取得済 ${lat.toFixed(2)}°N, ${Math.abs(lon).toFixed(2)}°E`);
+      btn.style.display='none';
+      debugLog('位置情報OK: '+lat.toFixed(2)+'N');
+    }, (err)=>{
+      setStatus('warn','位置情報なし（東京で推算）');
+      btn.style.display='none';
+      debugLog('位置情報エラー: '+err.message);
+    },{enableHighAccuracy:true,timeout:8000});
+  } else {
+    setStatus('err','位置情報非対応'); btn.style.display='none';
+  }
+}
+
+function setStatus(cls, msg){
+  document.getElementById('status-dot').className='status-dot '+cls;
+  document.getElementById('status-text').textContent=msg;
+}
+
+// オーバーレイを閉じてセンサー許可を開始
+async function startApp(){
+  document.getElementById('perm-overlay').style.display='none';
+  await requestAll();
+}
+
+// ══════════════════════════════════════════════
+//  TOUCH / DRAG
+// ══════════════════════════════════════════════
+const DRAG_THRESHOLD = 8; // px以上動いたらドラッグ扱い
+let touchMoved = false;
+
+canvas.addEventListener('touchstart', e=>{
+  if(e.touches.length===1){
+    isDragging=false; touchMoved=false;
+    dragStartX=e.touches[0].clientX; dragStartY=e.touches[0].clientY;
+    dragStartAz=azCenter; dragStartAlt=altCenter;
+  }
+},false);
+
+canvas.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  if(e.touches.length===1){
+    const dx=e.touches[0].clientX-dragStartX;
+    const dy=e.touches[0].clientY-dragStartY;
+    if(!touchMoved && Math.hypot(dx,dy) < DRAG_THRESHOLD) return;
+    touchMoved=true; isDragging=true;
+    useSensor=false; // ドラッグ中はセンサー停止
+    azCenter  = mod360(dragStartAz - dx*(fovH/W));
+    altCenter = Math.max(-85,Math.min(85, dragStartAlt + dy*(fovH*(H/W)/H)));
+  }
+},{passive:false});
+
+canvas.addEventListener('touchend', e=>{
+  if(!touchMoved && e.changedTouches.length===1){
+    handleClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  }
+  isDragging=false; touchMoved=false;
+  // ドラッグ終了後すぐセンサー再開
+  useSensor=true;
+  lastAz=null; // 再開時に前のazをリセット
+});
+
+// Mouse drag (desktop)
+let mouseHasMoved = false;
+canvas.addEventListener('mousedown', e=>{
+  mouseHasMoved=false;
+  isDragging=true;
+  dragStartX=e.clientX; dragStartY=e.clientY;
+  dragStartAz=azCenter; dragStartAlt=altCenter;
+});
+canvas.addEventListener('mousemove', e=>{
+  if(!isDragging) return;
+  const dx=e.clientX-dragStartX, dy=e.clientY-dragStartY;
+  if(Math.hypot(dx,dy) < DRAG_THRESHOLD) return;
+  mouseHasMoved=true;
+  azCenter  = mod360(dragStartAz - dx*(fovH/W));
+  altCenter = Math.max(-85,Math.min(85, dragStartAlt + dy*(fovH*(H/W)/H)));
+  useSensor=false;
+});
+canvas.addEventListener('mouseup', ()=>{ isDragging=false; });
+canvas.addEventListener('wheel', e=>{
+  fovH = Math.max(15, Math.min(120, fovH + e.deltaY*0.05));
+  e.preventDefault();
+},{passive:false});
+
+// ── CLICK for tooltip ──
+function handleClick(cx, cy){
+  const now=new Date();
+  const jd=getJD(now);
+  let best=null, bestDist=999;
+
+  // Check stars
+  STAR_LIST.forEach((s,i)=>{
+    const pos=cachedAltAz[i]; if(!pos) return;
+    const p=project(pos.az,pos.alt);
+    const dist=Math.hypot(p.x-cx,p.y-cy);
+    if(dist<20 && dist<bestDist){ bestDist=dist; best={name:s[3],nameJP:s[4],mag:s[2],alt:pos.alt,az:pos.az,type:'star'}; }
+  });
+  // Check planets
+  cachedPlanets.forEach(pl=>{
+    const p=project(pl.az,pl.alt);
+    const dist=Math.hypot(p.x-cx,p.y-cy);
+    if(dist<24 && dist<bestDist){ bestDist=dist; best={name:pl.name,nameJP:pl.nameJP,alt:pl.alt,az:pl.az,type:'planet'}; }
+  });
+
+  const tip=document.getElementById('tooltip');
+  if(best){
+    document.getElementById('tooltip-name').textContent=`${best.nameJP} (${best.name})`;
+    document.getElementById('tooltip-info').innerHTML=
+      `種別: ${best.type==='star'?'恒星':'惑星'}<br>`+
+      `高度角: ${best.alt.toFixed(1)}°<br>`+
+      `方位角: ${best.az.toFixed(1)}° ${dirStr(best.az)}<br>`+
+      (best.mag!=null?`等級: ${best.mag}`:'');
+    tip.style.left=(cx+12)+'px'; tip.style.top=(cy-40)+'px';
+    tip.style.display='block';
+    setTimeout(()=>tip.style.display='none',3000);
+  } else { tip.style.display='none'; }
+}
+
+canvas.addEventListener('click', e=>handleClick(e.clientX,e.clientY));
+
+// ══════════════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════════════
+document.getElementById('zoomIn').onclick  = ()=>{ fovH=Math.max(15,fovH-10); };
+document.getElementById('zoomOut').onclick = ()=>{ fovH=Math.min(120,fovH+10); };
+document.getElementById('resetView').onclick= ()=>{ azCenter=180; altCenter=30; fovH=80; useSensor=true; lastAz=null; };
+
+document.querySelectorAll('.tog').forEach(el=>{
+  el.onclick=()=>{
+    const k=el.dataset.key;
+    if(k==='stars')    showStars    =!showStars;
+    if(k==='consts')   showConsts   =!showConsts;
+    if(k==='labels')   showLabels   =!showLabels;
+    if(k==='planets')  showPlanets  =!showPlanets;
+    if(k==='milkyway') showMilkyWay =!showMilkyWay;
+    el.classList.toggle('on');
+  };
+});
+
+// ══════════════════════════════════════════════
+//  DEBUG LOG
+// ══════════════════════════════════════════════
+const debugLines = [];
+function debugLog(msg){
+  const t = new Date();
+  const ts = t.getHours()+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+  debugLines.unshift('['+ts+'] '+msg);
+  if(debugLines.length > 8) debugLines.pop();
+  const el = document.getElementById('sp-log');
+  if(el) el.textContent = debugLines.join('\n');
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+const isIOS = typeof DeviceOrientationEvent!=='undefined' &&
+              typeof DeviceOrientationEvent.requestPermission==='function';
+
+debugLog('isIOS: '+isIOS);
+debugLog('DeviceOrientationEvent: '+(typeof DeviceOrientationEvent));
+debugLog('ontouchstart: '+('ontouchstart' in window));
+
+if(!isIOS){
+  // Android / 非iOS: 許可不要で即開始、オーバーレイ非表示
+  document.getElementById('perm-overlay').style.display='none';
+  useSensor=true; startSensor();
+  debugLog('非iOS: センサー自動開始');
+  setStatus('warn','📍 位置情報を許可してください');
+} else {
+  // iOS: オーバーレイ表示でユーザー操作待ち
+  setStatus('','⬇️ 「許可して開始」を押してください');
+  debugLog('iOS: ユーザー許可待ち');
+}
+
+if(!('ontouchstart' in window)){
+  // Desktop
+  document.getElementById('perm-overlay').style.display='none';
+  setStatus('warn','🖱️ ドラッグ: 視点移動 / スクロール: ズーム');
+  document.getElementById('perm-btn').textContent='📍 位置情報のみ取得';
+  debugLog('デスクトップモード');
+}
+
+// ══════════════════════════════════════════════
+//  LOOP
+// ══════════════════════════════════════════════
+function loop(){
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
