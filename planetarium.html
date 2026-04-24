@@ -449,12 +449,12 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 <div id="orrery-panel">
   <div id="orrery-title">
     🪐 太陽系惑星配置図
-    <button onclick="toggleOrrery()" style="
+    <button id="orrery-panel-btn" onclick="toggleOrrery()" style="
       font-family:'Orbitron',monospace; font-size:0.58rem;
       padding:4px 10px; border-radius:5px; cursor:pointer;
-      background:rgba(248,113,113,0.15);
-      border:1.5px solid rgba(248,113,113,0.5);
-      color:#f87171;">✕ 閉じる</button>
+      background:rgba(74,222,128,0.15);
+      border:1.5px solid rgba(74,222,128,0.5);
+      color:#4ade80;">▶ 開く</button>
   </div>
   <canvas id="orrery-canvas" width="340" height="340"></canvas>
   <table id="orrery-table">
@@ -2369,13 +2369,28 @@ function toggleOrrery(){
       tog.style.boxShadow='0 0 12px rgba(125,211,252,0.3)';
       tog.style.color='#fff';
       drawOrrery();
-      orreryTimer = setInterval(drawOrrery, 10000); // 10秒毎更新
+      orreryTimer = setInterval(drawOrrery, 10000);
     } else {
       tog.textContent='🪐 惑星図';
       tog.style.background='linear-gradient(135deg,rgba(125,211,252,0.15),rgba(167,139,250,0.15))';
       tog.style.boxShadow='none';
       tog.style.color='#7dd3fc';
       if(orreryTimer){ clearInterval(orreryTimer); orreryTimer=null; }
+    }
+  }
+  // パネル内ボタンの状態切り替え
+  const pb = document.getElementById('orrery-panel-btn');
+  if(pb){
+    if(orreryOpen){
+      pb.textContent='✕ 閉じる';
+      pb.style.background='rgba(248,113,113,0.15)';
+      pb.style.border='1.5px solid rgba(248,113,113,0.5)';
+      pb.style.color='#f87171';
+    } else {
+      pb.textContent='▶ 開く';
+      pb.style.background='rgba(74,222,128,0.15)';
+      pb.style.border='1.5px solid rgba(74,222,128,0.5)';
+      pb.style.color='#4ade80';
     }
   }
 }
