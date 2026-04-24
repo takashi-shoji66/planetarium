@@ -557,7 +557,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 </div>
 
 <!-- バージョンバッジ＆更新履歴 -->
-<div id="version-badge" onclick="toggleChangelog()">v1.7.1</div>
+<div id="version-badge" onclick="toggleChangelog()">v1.7.2</div>
 <div id="changelog">
   <div class="cl-title">📋 更新履歴
     <span onclick="toggleChangelog()" style="cursor:pointer; color:#4a5a7a; font-size:0.7rem; padding:2px 8px; border:1px solid #1a2a4a; border-radius:4px;">✕ 閉じる</span>
@@ -606,7 +606,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
   <div style="font-family:'Orbitron',monospace; font-size:0.75rem; letter-spacing:0.3em; color:#7dd3fc; text-shadow:0 0 20px #7dd3fc; margin-bottom:6px;">✦ PLANETARIUM</div>
 
   <!-- バージョン・更新日 -->
-  <div style="font-family:'Orbitron',monospace; font-size:0.5rem; letter-spacing:0.15em; color:#4a5a7a; margin-bottom:4px;">v1.7.1</div>
+  <div style="font-family:'Orbitron',monospace; font-size:0.5rem; letter-spacing:0.15em; color:#4a5a7a; margin-bottom:4px;">v1.7.2</div>
   <div style="font-family:'Orbitron',monospace; font-size:0.45rem; color:#2a3a5a; margin-bottom:28px; letter-spacing:0.1em;">Updated: 2026-04-24</div>
 
   <!-- 説明 -->
@@ -2018,11 +2018,34 @@ function tlSkipTo(target){
   if(target==='sunrise' && tlSunrise>0) tlMinutes=Math.max(0,tlSunrise-30);
   else if(target==='sunset' && tlSunset>0) tlMinutes=Math.max(0,tlSunset-30);
   else if(target==='now'){
-    const now=new Date();
-    tlMinutes=now.getHours()*60+now.getMinutes();
-    tlActive=false; // 現在時刻に戻す
+    // ボタンを押した瞬間の年月日・時刻を完全に反映
+    const now = new Date();
+    tlActive  = false; // リアルタイムモードに戻す
+    tlBaseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0);
+    tlMinutes  = now.getHours()*60 + now.getMinutes();
+
+    // 年月日セレクタを現在値に更新
+    const ySel = document.getElementById('tl-year');
+    const mSel = document.getElementById('tl-month');
+    const dSel = document.getElementById('tl-day');
+    if(ySel) ySel.value = now.getFullYear();
+    if(mSel) mSel.value = now.getMonth()+1;
+    updateDaySelector();
+    setTimeout(()=>{ if(dSel) dSel.value = now.getDate(); }, 30);
+
+    // 日付表示を更新
+    const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const dd = document.getElementById('tl-date-display');
+    if(dd) dd.textContent = `${now.getFullYear()}年 ${months[now.getMonth()]} ${now.getDate()}日`;
+
+    // 日の出・日没を再計算
+    setTimeout(()=>{
+      const rs = calcSunriseSunset(tlBaseDate);
+      tlSunrise = rs.rise; tlSunset = rs.set;
+      renderTLMarkers();
+    }, 50);
   }
-  document.getElementById('tl-slider').value=tlMinutes;
+  document.getElementById('tl-slider').value = tlMinutes;
   updateTLDisplay();
 }
 
