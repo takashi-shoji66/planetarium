@@ -409,8 +409,25 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
       box-shadow:0 0 8px rgba(74,222,128,0.2);
     ">▶ 開く</button>
   </div>
+  <!-- 日付選択 -->
+  <div id="tl-date-row" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+    <span style="font-size:0.52rem;color:#4a5a7a;letter-spacing:0.1em;">📅 日付:</span>
+    <select id="tl-year" style="font-family:'Orbitron',monospace;font-size:0.58rem;background:#0a0f1e;color:#7dd3fc;border:1px solid rgba(125,211,252,0.3);border-radius:5px;padding:4px 6px;cursor:pointer;">
+    </select>
+    <select id="tl-month" style="font-family:'Orbitron',monospace;font-size:0.58rem;background:#0a0f1e;color:#7dd3fc;border:1px solid rgba(125,211,252,0.3);border-radius:5px;padding:4px 6px;cursor:pointer;">
+      <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+      <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+      <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+      <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+    </select>
+    <select id="tl-day" style="font-family:'Orbitron',monospace;font-size:0.58rem;background:#0a0f1e;color:#7dd3fc;border:1px solid rgba(125,211,252,0.3);border-radius:5px;padding:4px 6px;cursor:pointer;">
+    </select>
+    <button onclick="tlApplyDate()" style="font-family:'Orbitron',monospace;font-size:0.55rem;padding:4px 10px;border-radius:5px;background:rgba(125,211,252,0.15);border:1px solid rgba(125,211,252,0.4);color:#7dd3fc;cursor:pointer;">✓ 適用</button>
+    <button onclick="openBirthdayModal()" style="font-family:'Orbitron',monospace;font-size:0.52rem;padding:4px 8px;border-radius:5px;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:#a78bfa;cursor:pointer;" id="bd-shortcut-btn">🎂 誕生日</button>
+  </div>
+  <div id="tl-date-display" style="font-family:'Orbitron',monospace;font-size:0.55rem;color:#94a3b8;text-align:center;margin-bottom:4px;letter-spacing:0.1em;"></div>
   <div id="tl-time-display">--:--</div>
-  <div id="tl-sun-info">太陽高度: ---°　方位: ---°　空の状態: ---</div>
+  <div id="tl-sun-info">太陽高度: ---°　空の状態: ---</div>
   <div id="tl-markers"></div>
   <input type="range" id="tl-slider" min="0" max="1439" value="0">
   <div id="tl-btns">
@@ -486,13 +503,61 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 <!-- 月インジケーター -->
 <div id="moon-indicator">🌙</div>
 <div id="moon-indicator-label"></div>
+<!-- 誕生日設定モーダル -->
+<div id="birthday-modal" style="
+  display:none; position:fixed; inset:0; z-index:60;
+  background:rgba(2,5,15,0.88); backdrop-filter:blur(8px);
+  align-items:center; justify-content:center;
+">
+  <div style="
+    background:#080f22; border:1px solid rgba(167,139,250,0.5);
+    border-radius:14px; padding:20px 24px;
+    font-family:'Orbitron',monospace;
+    max-width:300px; width:90%;
+    box-shadow:0 0 40px rgba(167,139,250,0.2);
+  ">
+    <!-- タイトル -->
+    <div style="font-size:0.7rem;letter-spacing:0.2em;color:#a78bfa;text-shadow:0 0 10px rgba(167,139,250,0.6);margin-bottom:16px;text-align:center;">
+      🎂 誕生日の設定
+    </div>
+    <!-- 月・日選択 -->
+    <div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:14px;">
+      <select id="bd-month" style="font-family:'Orbitron',monospace;font-size:0.7rem;background:#0a0f1e;color:#a78bfa;border:1px solid rgba(167,139,250,0.4);border-radius:7px;padding:8px 10px;cursor:pointer;flex:1;">
+        <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+        <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+        <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+        <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+      </select>
+      <select id="bd-day" style="font-family:'Orbitron',monospace;font-size:0.7rem;background:#0a0f1e;color:#a78bfa;border:1px solid rgba(167,139,250,0.4);border-radius:7px;padding:8px 10px;cursor:pointer;flex:1;">
+      </select>
+    </div>
+    <!-- 星座表示 -->
+    <div id="bd-zodiac" style="text-align:center;font-size:0.85rem;color:#fcd34d;text-shadow:0 0 10px rgba(252,211,77,0.4);margin-bottom:6px;min-height:24px;"></div>
+    <div id="bd-zodiac-info" style="text-align:center;font-size:0.52rem;color:#4a5a7a;margin-bottom:16px;line-height:1.8;min-height:36px;"></div>
+    <!-- ボタン -->
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeBirthdayModal()" style="
+        flex:1;font-family:'Orbitron',monospace;font-size:0.6rem;
+        padding:10px;border-radius:7px;cursor:pointer;
+        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#4a5a7a;
+      ">キャンセル</button>
+      <button onclick="saveBirthday()" style="
+        flex:1;font-family:'Orbitron',monospace;font-size:0.6rem;
+        padding:10px;border-radius:7px;cursor:pointer;
+        background:rgba(167,139,250,0.25);border:1px solid rgba(167,139,250,0.6);color:#a78bfa;
+        box-shadow:0 0 12px rgba(167,139,250,0.2);
+      ">✓ 保存して表示</button>
+    </div>
+  </div>
+</div>
+
 <div id="tooltip">
   <div id="tooltip-name"></div>
   <div id="tooltip-info"></div>
 </div>
 
 <!-- バージョンバッジ＆更新履歴 -->
-<div id="version-badge" onclick="toggleChangelog()">v1.6.1</div>
+<div id="version-badge" onclick="toggleChangelog()">v1.7.1</div>
 <div id="changelog">
   <div class="cl-title">📋 更新履歴
     <span onclick="toggleChangelog()" style="cursor:pointer; color:#4a5a7a; font-size:0.7rem; padding:2px 8px; border:1px solid #1a2a4a; border-radius:4px;">✕ 閉じる</span>
@@ -541,7 +606,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
   <div style="font-family:'Orbitron',monospace; font-size:0.75rem; letter-spacing:0.3em; color:#7dd3fc; text-shadow:0 0 20px #7dd3fc; margin-bottom:6px;">✦ PLANETARIUM</div>
 
   <!-- バージョン・更新日 -->
-  <div style="font-family:'Orbitron',monospace; font-size:0.5rem; letter-spacing:0.15em; color:#4a5a7a; margin-bottom:4px;">v1.6.1</div>
+  <div style="font-family:'Orbitron',monospace; font-size:0.5rem; letter-spacing:0.15em; color:#4a5a7a; margin-bottom:4px;">v1.7.1</div>
   <div style="font-family:'Orbitron',monospace; font-size:0.45rem; color:#2a3a5a; margin-bottom:28px; letter-spacing:0.1em;">Updated: 2026-04-24</div>
 
   <!-- 説明 -->
@@ -1900,17 +1965,24 @@ function toggleTimelapse(){
     // 初回: 今日の日付を基準に計算
     tlBaseDate = new Date();
     tlBaseDate.setHours(0,0,0,0);
-    // 現在時刻から開始
     const now = new Date();
     tlMinutes = now.getHours()*60 + now.getMinutes();
     document.getElementById('tl-slider').value = tlMinutes;
-    // 日の出・日没計算（少し待ってから）
+    // 日付セレクタ初期化
+    initDateSelectors();
+    // 今日の日付を表示
+    const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const dd = document.getElementById('tl-date-display');
+    if(dd) dd.textContent = `${now.getFullYear()}年 ${months[now.getMonth()]} ${now.getDate()}日`;
+    // 日の出・日没計算
     setTimeout(()=>{
       const rs = calcSunriseSunset(tlBaseDate);
       tlSunrise = rs.rise; tlSunset = rs.set;
       renderTLMarkers();
       updateTLDisplay();
     }, 100);
+  } else if(tlOpen){
+    initDateSelectors();
   }
 }
 
@@ -1984,6 +2056,189 @@ function updateTLDisplay(){
     if(el) el.textContent=`太陽高度: ${alt.toFixed(1)}°　${skyState}`;
   }
 }
+
+// ══════════════════════════════════════════════
+//  タイムラプス日付選択
+// ══════════════════════════════════════════════
+
+// 年・日のselectを初期化
+function initDateSelectors(){
+  const now = new Date();
+  const yearSel = document.getElementById('tl-year');
+  const daySel  = document.getElementById('tl-day');
+  const monthSel= document.getElementById('tl-month');
+  if(!yearSel) return;
+
+  // 年: 現在年の前後2年
+  yearSel.innerHTML='';
+  for(let y=now.getFullYear()-1; y<=now.getFullYear()+2; y++){
+    const opt=document.createElement('option');
+    opt.value=y; opt.textContent=y+'年';
+    if(y===now.getFullYear()) opt.selected=true;
+    yearSel.appendChild(opt);
+  }
+  // 月: 現在月を選択
+  monthSel.value = now.getMonth()+1;
+
+  // 日: 1〜31
+  updateDaySelector();
+
+  // 月変更時に日数を更新
+  monthSel.addEventListener('change', updateDaySelector);
+  yearSel.addEventListener('change',  updateDaySelector);
+}
+
+function updateDaySelector(){
+  const yearSel = document.getElementById('tl-year');
+  const monthSel= document.getElementById('tl-month');
+  const daySel  = document.getElementById('tl-day');
+  if(!daySel) return;
+  const y = parseInt(yearSel.value);
+  const m = parseInt(monthSel.value);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const prevDay = parseInt(daySel.value) || 1;
+  daySel.innerHTML='';
+  for(let d=1; d<=daysInMonth; d++){
+    const opt=document.createElement('option');
+    opt.value=d; opt.textContent=d+'日';
+    if(d===Math.min(prevDay, daysInMonth)) opt.selected=true;
+    daySel.appendChild(opt);
+  }
+}
+
+// 日付を適用してシミュレーション開始
+function tlApplyDate(){
+  const y = parseInt(document.getElementById('tl-year').value);
+  const m = parseInt(document.getElementById('tl-month').value);
+  const d = parseInt(document.getElementById('tl-day').value);
+  // PHT(UTC+8)基準で日付設定
+  tlBaseDate = new Date(y, m-1, d, 0, 0, 0);
+  tlActive = true;
+  // 日の出・日没を再計算
+  const rs = calcSunriseSunset(tlBaseDate);
+  tlSunrise = rs.rise; tlSunset = rs.set;
+  renderTLMarkers();
+  updateTLDisplay();
+  // 日付表示更新
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const dd = document.getElementById('tl-date-display');
+  if(dd) dd.textContent = `${y}年 ${months[m-1]} ${d}日`;
+}
+
+// ══════════════════════════════════════════════
+//  誕生日設定
+// ══════════════════════════════════════════════
+// 保存された誕生日（localStorage使用）
+let savedBdMonth = parseInt(localStorage.getItem('bd_month')||'5');
+let savedBdDay   = parseInt(localStorage.getItem('bd_day')||'6');
+
+// 12星座データ
+const ZODIAC = [
+  {name:'やぎ座',   sym:'♑', en:'Capricorn',  from:[12,22], to:[1,19],  best:'7月〜8月'},
+  {name:'みずがめ座',sym:'♒', en:'Aquarius',   from:[1,20],  to:[2,18],  best:'8月〜9月'},
+  {name:'うお座',   sym:'♓', en:'Pisces',      from:[2,19],  to:[3,20],  best:'9月〜10月'},
+  {name:'おひつじ座',sym:'♈', en:'Aries',       from:[3,21],  to:[4,19],  best:'10月〜11月'},
+  {name:'おうし座', sym:'♉', en:'Taurus',      from:[4,20],  to:[5,20],  best:'11月〜1月'},
+  {name:'ふたご座', sym:'♊', en:'Gemini',      from:[5,21],  to:[6,21],  best:'12月〜1月'},
+  {name:'かに座',   sym:'♋', en:'Cancer',      from:[6,22],  to:[7,22],  best:'1月〜2月'},
+  {name:'しし座',   sym:'♌', en:'Leo',         from:[7,23],  to:[8,22],  best:'2月〜3月'},
+  {name:'おとめ座', sym:'♍', en:'Virgo',       from:[8,23],  to:[9,22],  best:'3月〜4月'},
+  {name:'てんびん座',sym:'♎', en:'Libra',       from:[9,23],  to:[10,23], best:'4月〜5月'},
+  {name:'さそり座', sym:'♏', en:'Scorpius',    from:[10,24], to:[11,22], best:'5月〜6月'},
+  {name:'いて座',   sym:'♐', en:'Sagittarius', from:[11,23], to:[12,21], best:'6月〜7月'},
+];
+
+function getZodiac(m, d){
+  for(const z of ZODIAC){
+    const [fm,fd]=z.from, [tm,td]=z.to;
+    if((m===fm&&d>=fd)||(m===tm&&d<=td)) return z;
+    // やぎ座の年またぎ対応
+    if(fm>tm){
+      if((m===fm&&d>=fd)||(m===tm&&d<=td)||(m>fm||m<tm)) return z;
+    }
+  }
+  return ZODIAC[0];
+}
+
+// モーダルを開く
+function openBirthdayModal(){
+  const modal = document.getElementById('birthday-modal');
+  modal.style.display='flex';
+  // 保存済み誕生日をセット
+  document.getElementById('bd-month').value = savedBdMonth;
+  updateBdDaySelector();
+  setTimeout(()=>{
+    document.getElementById('bd-day').value = savedBdDay;
+    updateZodiacPreview();
+  }, 30);
+  // 月変更時に日数と星座を更新
+  document.getElementById('bd-month').onchange = ()=>{ updateBdDaySelector(); updateZodiacPreview(); };
+}
+
+function closeBirthdayModal(){
+  document.getElementById('birthday-modal').style.display='none';
+}
+
+function updateBdDaySelector(){
+  const m = parseInt(document.getElementById('bd-month').value);
+  const daySel = document.getElementById('bd-day');
+  const prev = parseInt(daySel.value)||1;
+  const days = new Date(2024,m,0).getDate(); // 閏年考慮
+  daySel.innerHTML='';
+  for(let d=1;d<=days;d++){
+    const opt=document.createElement('option');
+    opt.value=d; opt.textContent=d+'日';
+    if(d===Math.min(prev,days)) opt.selected=true;
+    daySel.appendChild(opt);
+  }
+  daySel.onchange = updateZodiacPreview;
+}
+
+function updateZodiacPreview(){
+  const m = parseInt(document.getElementById('bd-month').value);
+  const d = parseInt(document.getElementById('bd-day').value);
+  const z = getZodiac(m,d);
+  document.getElementById('bd-zodiac').textContent = `${z.sym} ${z.name} (${z.en})`;
+  document.getElementById('bd-zodiac-info').innerHTML =
+    `夜空で最もよく見える時期: ${z.best}<br>誕生日は太陽と同方向のため夜は見えません`;
+}
+
+function saveBirthday(){
+  const m = parseInt(document.getElementById('bd-month').value);
+  const d = parseInt(document.getElementById('bd-day').value);
+  savedBdMonth = m; savedBdDay = d;
+  localStorage.setItem('bd_month', m);
+  localStorage.setItem('bd_day',   d);
+  closeBirthdayModal();
+  // ショートカットボタンのラベルを更新
+  const z = getZodiac(m,d);
+  const btn = document.getElementById('bd-shortcut-btn');
+  if(btn) btn.textContent = `${z.sym} ${m}/${d}`;
+  // タイムラプスに適用
+  tlSetBirthday(m, d);
+}
+
+// 誕生日でタイムラプスを設定
+function tlSetBirthday(month, day){
+  const now = new Date();
+  document.getElementById('tl-year').value  = now.getFullYear();
+  document.getElementById('tl-month').value = month;
+  updateDaySelector();
+  setTimeout(()=>{
+    document.getElementById('tl-day').value = day;
+    tlApplyDate();
+    tlMinutes = 21*60; // 夜21時
+    document.getElementById('tl-slider').value = tlMinutes;
+    updateTLDisplay();
+  }, 50);
+}
+
+// 起動時にボタンラベルを保存済み誕生日で初期化
+window.addEventListener('load',()=>{
+  const z = getZodiac(savedBdMonth, savedBdDay);
+  const btn = document.getElementById('bd-shortcut-btn');
+  if(btn) btn.textContent = `${z.sym} ${savedBdMonth}/${savedBdDay}`;
+});
 
 // バージョン・更新履歴開閉
 function toggleChangelog(){
