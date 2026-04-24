@@ -1166,37 +1166,38 @@ function getPlanets(jd){
 // ══════════════════════════════════════════════
 function getMoon(jd){
   const T = (jd - 2451545.0) / 36525;
-  // 月の平均黄経
   const L0 = mod360(218.3164477 + 481267.88123421*T);
-  // 月の平均近点角
   const M  = mod360(134.9633964 + 477198.8676313*T);
-  // 太陽の平均近点角
   const Ms = mod360(357.5291092 + 35999.0502909*T);
-  // 月の緯度引数
-  const F  = mod360(93.2720950 + 483202.0175233*T);
-  // 黄経補正
-  const dL = 6.289*sin(M) - 1.274*sin(2*L0-M) + 0.658*sin(2*L0)
-           - 0.214*sin(2*M) - 0.186*sin(Ms) - 0.114*sin(2*F);
+  const F  = mod360(93.2720950  + 483202.0175233*T);
+  const D  = mod360(297.8501921 + 445267.1114034*T);
+
+  // 黄経補正（DEGベースsin関数を使用）
+  const dL = 6.289*sin(M)    - 1.274*sin(2*D-M) + 0.658*sin(2*D)
+           - 0.214*sin(2*M)  - 0.186*sin(Ms)    - 0.114*sin(2*F);
   const moonLon = mod360(L0 + dL);
-  // 黄緯
   const moonLat = 5.128*sin(F) + 0.281*sin(M+F) - 0.277*sin(M-F);
-  // 赤道座標へ変換
+
   const epsilon = 23.439291 - 0.013004*T;
-  const raDeg  = mod360(Math.atan2(
-    sin(moonLon)*cos(epsilon*DEG) - Math.tan(moonLat*DEG)*sin(epsilon*DEG),
-    cos(moonLon*DEG)
-  )*RAD);
-  const decDeg = asin(sin(moonLat*DEG)*cos(epsilon*DEG)
-                    + cos(moonLat*DEG)*sin(epsilon*DEG)*sin(moonLon*DEG));
 
-  // 月相計算（太陽との離角）
-  const sunL = mod360(280.46646 + 36000.76983*T
-             + (1.9146*sin(mod360(357.52911+35999.05029*T))
-             +  0.02*sin(2*mod360(357.52911+35999.05029*T))));
-  const phase = mod360(moonLon - sunL); // 0=新月, 180=満月
-  const illumination = (1 - cos(phase)) / 2; // 0=新月, 1=満月
+  // 赤道座標変換
+  // sin/cosはDEGベース、Math.atan2/Math.tanはradianベース
+  const moonLatRad = moonLat * DEG;
+  const raDeg = mod360(Math.atan2(
+    sin(moonLon)*cos(epsilon) - Math.tan(moonLatRad)*sin(epsilon),
+    cos(moonLon)
+  ) * RAD);
+  const decDeg = asin(
+    sin(moonLat)*cos(epsilon) + cos(moonLat)*sin(epsilon)*sin(moonLon)
+  );
 
-  // 月相名
+  // 月相計算
+  const sunLon = mod360(280.46646 + 36000.76983*T
+               + (1.9146*sin(mod360(357.52911+35999.05029*T))
+               +  0.02*sin(2*mod360(357.52911+35999.05029*T))));
+  const phase = mod360(moonLon - sunLon);
+  const illumination = (1 - cos(phase)) / 2;
+
   let phaseName, phaseEmoji;
   if(phase < 22.5)       { phaseName='新月';     phaseEmoji='🌑'; }
   else if(phase < 67.5)  { phaseName='三日月';   phaseEmoji='🌒'; }
