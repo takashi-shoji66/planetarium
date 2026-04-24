@@ -85,6 +85,57 @@
 /* 月の位置・形 */
 .moon-symbol { font-size:1.4rem; line-height:1; }
 
+/* ── 惑星配置図パネル ── */
+#orrery-panel {
+  position:fixed; bottom:62px; left:0; right:0;
+  z-index:24;
+  background:rgba(4,7,15,0.96);
+  border-top:1px solid rgba(125,211,252,0.2);
+  padding:12px 16px 14px;
+  backdrop-filter:blur(12px);
+  transform:translateY(100%);
+  transition:transform 0.3s ease;
+  max-height:70vh;
+  overflow-y:auto;
+}
+#orrery-panel.open { transform:translateY(0); }
+#orrery-title {
+  font-family:'Orbitron',monospace;
+  font-size:0.58rem; letter-spacing:0.2em;
+  color:#7dd3fc; margin-bottom:10px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding-bottom:8px;
+  border-bottom:1px solid rgba(125,211,252,0.15);
+}
+#orrery-canvas {
+  display:block;
+  width:100%; max-width:340px;
+  margin:0 auto 10px;
+  border-radius:50%;
+}
+#orrery-table {
+  width:100%; max-width:340px;
+  margin:0 auto;
+  font-family:'Orbitron',monospace;
+  font-size:0.48rem;
+  border-collapse:collapse;
+}
+#orrery-table th {
+  color:#4a5a7a; font-size:0.45rem;
+  padding:4px 6px; text-align:left;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  letter-spacing:0.1em;
+}
+#orrery-table td {
+  padding:5px 6px; color:#e2e8f0;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+#orrery-table tr:last-child td { border-bottom:none; }
+.or-sym { font-size:0.75rem; }
+.or-vis-yes { color:#4ade80; }
+.or-vis-no  { color:#f87171; }
+.or-vis-low { color:#fcd34d; }
+
 /* ── タイムラプスパネル ── */
 #tl-panel {
   position:fixed; bottom:62px; left:0; right:0;
@@ -394,6 +445,32 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
   <button id="ar-btn" onclick="toggleAR()" style="pointer-events:auto;">📷 AR</button>
 </div>
 
+<!-- 惑星配置図パネル -->
+<div id="orrery-panel">
+  <div id="orrery-title">
+    🪐 太陽系惑星配置図
+    <button onclick="toggleOrrery()" style="
+      font-family:'Orbitron',monospace; font-size:0.58rem;
+      padding:4px 10px; border-radius:5px; cursor:pointer;
+      background:rgba(248,113,113,0.15);
+      border:1.5px solid rgba(248,113,113,0.5);
+      color:#f87171;">✕ 閉じる</button>
+  </div>
+  <canvas id="orrery-canvas" width="340" height="340"></canvas>
+  <table id="orrery-table">
+    <thead>
+      <tr>
+        <th>惑星</th>
+        <th>方位角</th>
+        <th>高度角</th>
+        <th>方角</th>
+        <th>状態</th>
+      </tr>
+    </thead>
+    <tbody id="orrery-tbody"></tbody>
+  </table>
+</div>
+
 <!-- タイムラプスパネル -->
 <div id="tl-panel">
   <div id="tl-title">
@@ -474,6 +551,17 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
     <div class="tog on" data-key="planets">♄ 惑星</div>
     <div class="tog on" data-key="milkyway">🌌 銀河</div>
     <div class="tog" id="sensor-tog" onclick="toggleSensorPanel()">📡 センサー</div>
+    <div id="orrery-tog" onclick="toggleOrrery()" style="
+      font-family:'Orbitron',monospace;
+      font-size:0.62rem; letter-spacing:0.08em;
+      padding:6px 12px; border-radius:14px;
+      cursor:pointer; user-select:none;
+      white-space:nowrap; flex-shrink:0;
+      background:linear-gradient(135deg,rgba(125,211,252,0.15),rgba(167,139,250,0.15));
+      border:1.5px solid rgba(125,211,252,0.4);
+      color:#7dd3fc;
+      transition:all 0.2s;
+    ">🪐 惑星図</div>
     <div id="tl-tog" onclick="toggleTimelapse()" style="
       font-family:'Orbitron',monospace;
       font-size:0.62rem; letter-spacing:0.08em;
@@ -557,7 +645,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
 </div>
 
 <!-- バージョンバッジ＆更新履歴 -->
-<div id="version-badge" onclick="toggleChangelog()">v1.7.2</div>
+<div id="version-badge" onclick="toggleChangelog()">v1.8.0</div>
 <div id="changelog">
   <div class="cl-title">📋 更新履歴
     <span onclick="toggleChangelog()" style="cursor:pointer; color:#4a5a7a; font-size:0.7rem; padding:2px 8px; border:1px solid #1a2a4a; border-radius:4px;">✕ 閉じる</span>
@@ -606,7 +694,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; }
   <div style="font-family:'Orbitron',monospace; font-size:0.75rem; letter-spacing:0.3em; color:#7dd3fc; text-shadow:0 0 20px #7dd3fc; margin-bottom:6px;">✦ PLANETARIUM</div>
 
   <!-- バージョン・更新日 -->
-  <div style="font-family:'Orbitron',monospace; font-size:0.5rem; letter-spacing:0.15em; color:#4a5a7a; margin-bottom:4px;">v1.7.2</div>
+  <div style="font-family:'Orbitron',monospace; font-size:0.5rem; letter-spacing:0.15em; color:#4a5a7a; margin-bottom:4px;">v1.8.0</div>
   <div style="font-family:'Orbitron',monospace; font-size:0.45rem; color:#2a3a5a; margin-bottom:28px; letter-spacing:0.1em;">Updated: 2026-04-24</div>
 
   <!-- 説明 -->
@@ -2262,6 +2350,212 @@ window.addEventListener('load',()=>{
   const btn = document.getElementById('bd-shortcut-btn');
   if(btn) btn.textContent = `${z.sym} ${savedBdMonth}/${savedBdDay}`;
 });
+
+// ══════════════════════════════════════════════
+//  惑星配置図（Orrery）
+// ══════════════════════════════════════════════
+let orreryOpen = false;
+let orreryTimer = null;
+
+function toggleOrrery(){
+  orreryOpen = !orreryOpen;
+  const panel = document.getElementById('orrery-panel');
+  const tog   = document.getElementById('orrery-tog');
+  if(panel) panel.classList.toggle('open', orreryOpen);
+  if(tog){
+    if(orreryOpen){
+      tog.textContent='🪐 惑星図 表示中';
+      tog.style.background='linear-gradient(135deg,rgba(125,211,252,0.35),rgba(167,139,250,0.3))';
+      tog.style.boxShadow='0 0 12px rgba(125,211,252,0.3)';
+      tog.style.color='#fff';
+      drawOrrery();
+      orreryTimer = setInterval(drawOrrery, 10000); // 10秒毎更新
+    } else {
+      tog.textContent='🪐 惑星図';
+      tog.style.background='linear-gradient(135deg,rgba(125,211,252,0.15),rgba(167,139,250,0.15))';
+      tog.style.boxShadow='none';
+      tog.style.color='#7dd3fc';
+      if(orreryTimer){ clearInterval(orreryTimer); orreryTimer=null; }
+    }
+  }
+}
+
+// 惑星の軌道半径（AU）と色・記号
+const PLANETS_ORRERY = [
+  {name:'水星',sym:'☿',en:'Mercury',a:0.387,color:'#94a3b8',r:4,  ra:null,dec:null},
+  {name:'金星',sym:'♀',en:'Venus',  a:0.723,color:'#fde68a',r:5,  ra:null,dec:null},
+  {name:'地球',sym:'🌍',en:'Earth', a:1.000,color:'#4ade80',r:5,  ra:null,dec:null},
+  {name:'火星',sym:'♂',en:'Mars',   a:1.524,color:'#f87171',r:4,  ra:null,dec:null},
+  {name:'木星',sym:'♃',en:'Jupiter',a:5.203,color:'#fb923c',r:8,  ra:null,dec:null},
+  {name:'土星',sym:'♄',en:'Saturn', a:9.537,color:'#fcd34d',r:7,  ra:null,dec:null},
+];
+
+// 惑星の黄経を計算（簡易）
+function getPlanetLon(jd){
+  const T=(jd-2451545.0)/36525;
+  // 各惑星の平均黄経（簡易計算）
+  return {
+    Mercury: mod360(252.250+149472.6674*T),
+    Venus:   mod360(181.979+ 58517.816*T),
+    Earth:   mod360(100.464+  35999.372*T),
+    Mars:    mod360(355.433+ 19140.302*T),
+    Jupiter: mod360( 34.351+  3034.905*T),
+    Saturn:  mod360( 50.077+  1222.494*T),
+  };
+}
+
+function drawOrrery(){
+  const canvas = document.getElementById('orrery-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+
+  // 背景
+  const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,cx);
+  bg.addColorStop(0,'#060d1f'); bg.addColorStop(1,'#020508');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // タイムラプス時刻またはリアルタイム
+  const now = tlActive ? getTLDate() : new Date();
+  const jd  = getJD(now);
+  const lons = getPlanetLon(jd);
+
+  // スケール: 土星の軌道が収まるように
+  // 内惑星圏と外惑星圏を分けて表示
+  // 表示モード: 内側(0-2AU)を大きく、外側(2-10AU)を小さく
+  const maxAU  = 10.0;
+  const maxR   = cx - 20;
+
+  // 対数スケールで軌道を描画
+  function auToR(au){ return Math.log(1+au)/Math.log(1+maxAU)*maxR; }
+
+  // 背景の小さな星
+  ctx.fillStyle='rgba(200,220,255,0.3)';
+  for(let i=0;i<60;i++){
+    const sx=Math.random()*W, sy=Math.random()*H;
+    ctx.beginPath(); ctx.arc(sx,sy,0.5,0,Math.PI*2); ctx.fill();
+  }
+
+  // 太陽の黄経（基準）
+  const sunLon = mod360(lons.Earth + 180);
+
+  const planetKeys = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn'];
+  const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  function dName(az){ return dirs[Math.round(az/22.5)%16]; }
+
+  const tableRows = [];
+
+  PLANETS_ORRERY.forEach((pl,i)=>{
+    const key = planetKeys[i];
+    const pLon = lons[key];
+    // 太陽からの角度（黄経差）→ 画面上の位置
+    // 上が北（黄経0°）として描画
+    const angle = (pLon - 90) * Math.PI/180; // 0°を上に
+    const r = auToR(pl.a);
+    const px = cx + Math.cos(angle)*r;
+    const py = cy + Math.sin(angle)*r;
+
+    // 軌道円
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.strokeStyle = key==='Earth'
+      ? 'rgba(74,222,128,0.3)'
+      : `rgba(255,255,255,${0.08+0.02*(6-i)})`;
+    ctx.lineWidth = key==='Earth' ? 1.5 : 0.8;
+    ctx.setLineDash(key==='Earth'?[]:[2,4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 土星の輪
+    if(key==='Saturn'){
+      ctx.save();
+      ctx.translate(px,py);
+      ctx.beginPath();
+      ctx.ellipse(0,0,pl.r*2.2,pl.r*0.6,0,0,Math.PI*2);
+      ctx.strokeStyle='rgba(252,211,77,0.6)'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.restore();
+    }
+
+    // 惑星本体
+    if(key==='Earth'){
+      // 地球: グロー付き
+      const eg=ctx.createRadialGradient(px,py,0,px,py,pl.r*3);
+      eg.addColorStop(0,'rgba(74,222,128,0.4)'); eg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath(); ctx.arc(px,py,pl.r*3,0,Math.PI*2);
+      ctx.fillStyle=eg; ctx.fill();
+    }
+    const pg=ctx.createRadialGradient(px-pl.r*0.3,py-pl.r*0.3,0,px,py,pl.r);
+    pg.addColorStop(0,'rgba(255,255,255,0.9)'); pg.addColorStop(1,pl.color);
+    ctx.beginPath(); ctx.arc(px,py,pl.r,0,Math.PI*2);
+    ctx.fillStyle=pg; ctx.fill();
+
+    // ラベル
+    ctx.font=`bold ${Math.max(8,10-i)}px 'Orbitron',monospace`;
+    ctx.fillStyle=pl.color;
+    ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=2;
+    const lx=px+(pl.r+3), ly=py-pl.r-2;
+    ctx.strokeText(pl.sym, lx, ly);
+    ctx.fillText(pl.sym, lx, ly);
+
+    // 惑星の空での位置（地球以外）
+    if(key!=='Earth'){
+      // 黄経から赤経に近似変換
+      const pRA  = mod360(pLon);
+      const pDec = 0; // 簡易（黄道傾斜無視）
+      const pos  = raDecToAltAz(pRA, pDec, lat, lon, now);
+      const vis  = pos.alt>10 ? '✅' : pos.alt>0 ? '⚠️' : '❌';
+      const visCls = pos.alt>10?'or-vis-yes':pos.alt>0?'or-vis-low':'or-vis-no';
+      tableRows.push({
+        sym:pl.sym, name:pl.name, az:pos.az.toFixed(1),
+        alt:pos.alt.toFixed(1), dir:dName(pos.az),
+        vis, visCls, color:pl.color
+      });
+    }
+  });
+
+  // 太陽（中心）
+  const sunG=ctx.createRadialGradient(cx,cy,0,cx,cy,16);
+  sunG.addColorStop(0,'#fffde7'); sunG.addColorStop(0.4,'#ffd54f');
+  sunG.addColorStop(0.8,'rgba(255,200,0,0.4)'); sunG.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,16,0,Math.PI*2); ctx.fillStyle=sunG; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2);
+  ctx.fillStyle='#fff9c4'; ctx.fill();
+
+  // 太陽ラベル
+  ctx.font="bold 9px 'Orbitron',monospace";
+  ctx.fillStyle='#ffd54f'; ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=2;
+  ctx.strokeText('☀️', cx-8, cy+22); ctx.fillText('☀️', cx-8, cy+22);
+
+  // 方位ラベル
+  ctx.font="8px 'Orbitron',monospace";
+  ctx.fillStyle='rgba(125,211,252,0.4)';
+  ctx.textAlign='center';
+  ctx.fillText('春分方向', cx, 14);
+  ctx.fillText('秋分方向', cx, H-4);
+  ctx.textAlign='left';
+
+  // 日時表示
+  const pad=n=>String(n).padStart(2,'0');
+  ctx.font="8px 'Orbitron',monospace";
+  ctx.fillStyle='rgba(125,211,252,0.6)';
+  ctx.textAlign='left';
+  ctx.fillText(`${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())} PHT`, 8, H-6);
+
+  // テーブル更新
+  const tbody = document.getElementById('orrery-tbody');
+  if(tbody){
+    tbody.innerHTML = tableRows.map(r=>`
+      <tr>
+        <td><span class="or-sym" style="color:${r.color}">${r.sym}</span> ${r.name}</td>
+        <td>${r.az}°</td>
+        <td style="color:${r.alt>=0?'#4ade80':'#f87171'}">${r.alt}°</td>
+        <td>${r.dir}</td>
+        <td class="${r.visCls}">${r.vis} ${parseFloat(r.alt)>10?'見える':parseFloat(r.alt)>0?'地平線近く':'見えない'}</td>
+      </tr>`).join('');
+  }
+}
 
 // バージョン・更新履歴開閉
 function toggleChangelog(){
